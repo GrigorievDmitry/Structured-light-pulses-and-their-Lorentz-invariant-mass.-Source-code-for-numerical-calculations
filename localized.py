@@ -62,6 +62,19 @@ def field_modulation(x, y):
     return 1.
     #return np.cos(x**2 + y**2)
     
+def saleh_teich(x, y, z, t):
+    rho = np.sqrt(x**2 + y**2)
+    tau0 = 1./delta_omega/np.pi
+    N = omega0 * tau0
+    z0 = np.pi * w0**2/lambda0
+    rho0 = np.pi * N * w0 * z/z0
+    t_rho = t - rho**2/(2*c*z)
+    tau_rho = tau0 * np.sqrt(1 + rho**2/rho0**2)
+    I = np.exp(-2*np.pi*N * rho**2/(rho**2 + rho0**2))/(1 + rho**2/rho0**2) * \
+        np.exp(-2*t_rho**2/tau_rho**2)/(1 + t_rho**2/(np.pi*N*tau0)**2)
+    return I
+    
+    
 #================================PARAMETERS====================================
 n = 100 #Spatial grid steps
 c = 3 * 10**8 #Speed of light
@@ -73,10 +86,11 @@ t_scale = 30. #Time scale factor
 t0 = 0 #Initial timestep
 T = 10 #Number of timesteps
 l0 = 10. #Transverse window size in [w0]
+time_window_number = 1 #Number of different space scales (for different time)
 
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
-paraxial = False #Use of paraxial approximation
+paraxial = True #Use of paraxial approximation
 scalar = False #Evaluate scalar field
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 #Data structure: pic/(f_type)_(folder_suffix)/files
@@ -103,13 +117,17 @@ intensity = []
 velosity = []
 angle = []
 z_offset = []
-time_window_number = 1
+saleh_teich_intensity = []
 
 for twn in range(time_window_number):
     loc_pulse = pulse(field, l*(twn + 1), k, r_type, *(f_type, w0, scalar))
+    y, z, x = np.meshgrid(l, l/k, l)
     for t in range(T):
         print(t)
         tau = (t + t0 + twn * T) * t_scale * w0/c
+        I = saleh_teich(x, y, z, tau)
+        saleh_teich_intensity.append(I)
+        
         loc_pulse.propagate(spec_envelop, tau, paraxial, *(omega0, delta_omega))
         loc_pulse.magnetic()
         loc_pulse.evolution()
