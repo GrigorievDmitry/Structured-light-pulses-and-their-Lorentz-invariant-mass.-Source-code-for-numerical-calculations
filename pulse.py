@@ -48,7 +48,7 @@ class pulse():
             self.H_sq = 0.
             for F in self.H: self.H_sq += pulse.real(F, self.r_type)**2
             self.EH = 0.
-            for i in range(3): self.EH += pulse.real(self.E[i]*self.H[i], self.r_type)
+            for i in range(3): self.EH += pulse.real(self.E[i], self.r_type) * pulse.real(self.H[i], self.r_type)
         except AttributeError:
             pass
     

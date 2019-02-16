@@ -103,7 +103,7 @@ intensity = []
 velosity = []
 angle = []
 z_offset = []
-time_window_number = 3
+time_window_number = 1
 
 for twn in range(time_window_number):
     loc_pulse = pulse(field, l*(twn + 1), k, r_type, *(f_type, w0, scalar))
@@ -153,10 +153,10 @@ velosity = np.array(velosity)
 duration = 1 #Time in seconds for each frame in animation
 
 fp.plot(intensity, l, 'intensity', fold, t_scale * w0/c, z_offset)
-#field_anim('intensity', duration)
-#
-#field_plot(mu, l, 'mu')
-#field_anim('mu', duration)
+fp.anim('intensity', duration)
+
+#fp.plot(mu, l, 'mu')
+#fp.anim('mu', duration)
 #
 #fig, (ax1, ax2) = plt.subplots(1, 2)
 #ax1.plot(m)
