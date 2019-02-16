@@ -1,0 +1,7 @@
+
+*.png
+*.txt
+pic\
+__pycache__\
+*.pyc
+*.gif

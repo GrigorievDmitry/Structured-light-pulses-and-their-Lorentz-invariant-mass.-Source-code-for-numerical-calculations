@@ -153,7 +153,7 @@ velosity = np.array(velosity)
 duration = 1 #Time in seconds for each frame in animation
 
 fp.plot(intensity, l, 'intensity', fold, t_scale * w0/c, z_offset)
-fp.anim('intensity', duration)
+fp.anim('intensity', fold, duration)
 
 #fp.plot(mu, l, 'mu')
 #fp.anim('mu', duration)
