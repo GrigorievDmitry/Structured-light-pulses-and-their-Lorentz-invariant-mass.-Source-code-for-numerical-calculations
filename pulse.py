@@ -53,9 +53,9 @@ class pulse():
             pass
     
     def magnetic(self):
-        scal = (self.Ek[0]*self.kx + self.Ek[1]*self.ky + self.Ek[2]*self.kz).max()
-        if scal > 10**(10):
-            raise Exception('Non orthogonal E and k, (E,k) = %e' %scal)
+#        scal = (self.Ek[0]*self.kx + self.Ek[1]*self.ky + self.Ek[2]*self.kz).max()
+#        if scal > 10**(10):
+#            raise Exception('Non orthogonal E and k, (E,k) = %e' %scal)
         norm = 1./np.sqrt(self.kx**2 + self.ky**2 + self.kz**2)
         Hx = (self.Ek[2] * self.ky - self.Ek[1] * self.kz) * norm
         Hy = (self.Ek[0] * self.kz - self.Ek[2] * self.kx) * norm
