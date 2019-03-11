@@ -1,6 +1,14 @@
 import numpy as np
 import scipy.integrate as spint
 from scipy.fftpack import fftn, ifftn, fftshift, ifftshift, ifft, fft
+import os
+
+def save_result(result):
+    path = os.getcwd() + '\\test'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    f_name = '\\test.npy'
+    np.save(path + f_name, result)
 
 class pulse():
 

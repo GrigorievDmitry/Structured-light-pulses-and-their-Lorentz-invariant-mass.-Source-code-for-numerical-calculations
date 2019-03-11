@@ -4,7 +4,7 @@ from scipy.special import jv, assoc_laguerre, eval_hermite, erf
 import time
 import os
 from numba import njit, prange
-from pulse import pulse
+from pulse import pulse, save_result
 import field_plotter as fp
 
 #============================MODELING_FUNCTIONS================================
@@ -138,7 +138,7 @@ saleh_teich_intensity = []
 for twn in range(time_window_number):
     loc_pulse = pulse(field, l*(twn + 1), r_type, *(f_type, w0, scalar))
     loc_pulse.spatial_bound_ft()
-    temp_range = np.linspace(0, 2*k*tp)
+    temp_range = np.linspace(0, 2*k*tp, n)
     loc_pulse.temporal_bound_ft(temporal_envelop, temp_range, *(k, tp, omega0))
     loc_pulse.define_Ekz()
     loc_pulse.make_ksi_propagator(paraxial)
@@ -189,10 +189,12 @@ for twn in range(time_window_number):
 #m - Integrated mass density; shape(T)
 #mass - Mass; shape(T), all elements are equal
 
-duration = 1 #Time in seconds for each frame in animation
-
-fp.plot(intensity, l, 'intensity', fold, t_scale * w0/c)
-fp.anim('intensity', fold, duration)
+#duration = 1 #Time in seconds for each frame in animation
+#
+#fp.plot(intensity, l, 'intensity', fold, t_scale * w0/c)
+#fp.anim('intensity', fold, duration)
+        
+save_result(intensity)
 
 #fp.plot(mu, l, 'mu')
 #fp.anim('mu', duration)
