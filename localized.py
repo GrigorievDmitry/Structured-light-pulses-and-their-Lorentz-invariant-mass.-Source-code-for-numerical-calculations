@@ -1,6 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import jv, assoc_laguerre, eval_hermite
+#import matplotlib.pyplot as plt
+from scipy.special import jv, assoc_laguerre, eval_hermite, erf
 import time
 import os
 
@@ -54,8 +54,12 @@ def field(point, name, w0, scalar=False):
         Ey = Ey * E
         return Ex, Ey
 
-def spec_envelop(omega, omega0, delta_omega):
-    return np.exp(-(omega - omega0)**2/delta_omega**2)
+def spec_envelop(omega, omega0, k, tp):
+    env = 1j * tp * np.exp(1j*(omega - omega0)*k*tp) * (np.sqrt(2) * np.exp(k**2/2 - (omega - omega0)**2 * tp**2/2) *\
+            (erf(k/np.sqrt(2) + 1j*(omega - omega0)*k*tp/np.sqrt(2)) + erf(k/np.sqrt(2) - 1j*(omega - omega0)*k*tp/np.sqrt(2))) -\
+            2*k*np.sinc((omega - omega0)*k*tp))
+    return env
+#    return np.exp(-(omega - omega0)**2/delta_omega**2)
 
 #Boundary additional modulation
 def field_modulation(x, y):
@@ -128,7 +132,7 @@ for twn in range(time_window_number):
         I = saleh_teich(x, y, z, tau)
         saleh_teich_intensity.append(I)
         
-        loc_pulse.propagate(spec_envelop, tau, paraxial, *(omega0, delta_omega))
+        loc_pulse.propagate(spec_envelop, tau, paraxial, *(omega0, 10, lambda0/c))
         loc_pulse.magnetic()
         loc_pulse.evolution()
         
