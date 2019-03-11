@@ -101,7 +101,7 @@ time_window_number = 1 #Number of different space scales (for different time)
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
-scalar = True #Evaluate scalar field
+scalar = False #Evaluate scalar field
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 #Data structure: pic/(f_type)_(folder_suffix)/files
 #==============================================================================
@@ -131,7 +131,8 @@ saleh_teich_intensity = []
 
 for twn in range(time_window_number):
     loc_pulse = pulse(field, l*(twn + 1), k, r_type, *(f_type, w0, scalar))
-    loc_pulse.spectral_env(spec_envelop, *(omega0, 2, lambda0/c))
+    loc_pulse.spatial_bound_ft()
+    loc_pulse.spec_envelop =
     y, z, x = np.meshgrid(l, l/k, l)
     for t in range(T):
         print(t)

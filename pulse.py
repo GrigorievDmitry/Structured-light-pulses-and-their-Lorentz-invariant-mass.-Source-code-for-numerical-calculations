@@ -5,53 +5,61 @@ from scipy.fftpack import fftn, ifftn, fftshift, ifftshift
 class pulse():
 
     c = 3 * 10**8
-    def __init__(self, boundary, trvs_range, z_scale, real_type, *args):
+    def __init__(self, boundary, trvs_range, real_type, *args):
         self.l = trvs_range
         self.n = len(trvs_range)
-        self.z_scale = z_scale
         self.r_type = real_type
-
-        self.lk = np.linspace(-self.n/2/(trvs_range[-1] - trvs_range[0]), self.n/2/(trvs_range[-1] - trvs_range[0]), self.n)
-        self.lkz = (self.lk + self.n/2/(trvs_range[-1] - trvs_range[0]) + 10**(-200)) * self.z_scale
-        self.ky, self.kz, self.kx = np.meshgrid(self.lk, self.lkz, self.lk)
-
         self.E_bound = boundary(np.meshgrid(self.l, self.l), *args)
-        self.ft_on_bound()
 
-    def ft_on_bound(self):
+    def spatial_bound_ft(self):
+        self.lk = np.linspace(-self.n/2/(self.l[-1] - self.l[0]), self.n/2/(self.l[-1] - self.l[0]), self.n)
         self.Ek_bound = [fftshift(fftn(Eb)) for Eb in self.E_bound]
+
+    def temporal_bound_ft(self, temp_envelop, temporal_range, *args):
+        self.t = temporal_range
+        self.nt = len(temporal_range)
+        self.spec_envelop = ifft(temp_envelop(self.t, *args))
+        self.l_omega = np.linspace(0, self.nt/(temporal_range[-1] - temporal_range[0]), self.nt)
+
+    def define_Ekz(self):
+        self.ky, self.omega, self.kx = np.meshgrid(self.lk, self.l_omega, self.lk)
+        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
         Ekz = -(self.Ek_bound[0] * self.kx + self.Ek_bound[1] * self.ky)/self.kz
         self.Ek_bound.append(Ekz)
 
-    def propagate(self, spec_envelop, t, paraxial):
-        if not paraxial:
-            kr = np.sqrt(self.kx**2 + self.ky**2 + self.kz**2)
-            propagator = self.spec_envelop * pulse.c * self.kz/kr * np.exp(-1j * pulse.c * kr * t)
-        else:
-            kr = self.kz * (1 + (self.kx**2 + self.ky**2)/2/(self.kz**2 + 10**(-200)))
-            propagator = self.spec_envelop * pulse.c/(1 +
-                                 (self.kx**2 + self.ky**2)/2/(self.kz**2 + 10**(-200))) * np.exp(-1j * pulse.c * kr * t)
-        self.Ek = [Eb * propagator for Eb in self.Ek_bound]
+    def set_spec_envelop(self, spec_envelop, spec_range):
+        self.spec_envelop = spec_envelop
+        self.l_omega = spec_range
+        self.nt = len(spec_range)
+        self.t = np.linspace(0, self.nt/(spec_range[-1] - spec_range[0]), self.nt)
 
-    def spectral_env(self, spec_envelop, *args):
-        kr = np.sqrt(self.kx**2 + self.ky**2 + self.kz**2)
-        shape = kr.shape
-        kr = kr.ravel()
-        env = spec_envelop(pulse.c * kr, *args)
-        self.spec_envelop = env.reshape(shape)
+    def make_t_propagator(self, paraxial):
+        if not paraxial:
+            self.propagator = np.exp(-1j*np.kz)
+        else:
+            self.propagator = np.exp(-1j*self.omega/pulse.c*(1 - pulse.c**2*(self.kx*2 + self.ky**2)/2/self.omega**2)
+
+    def make_ksi_propagator(self, paraxial):
+        if not paraxial:
+            self.propagator = np.exp(1j*(self.omega/pulse.c - self.kz)
+        else:
+            self.propagator = np.exp(1j*pulse.c*(self.kx*2 + self.ky**2)/2/self.omega)
+
+    def propagate(self, z):
+        self.Ek = [Eb * self.propagator**z for Eb in self.Ek_bound]
 
     def evolution(self):
         self.E = []
         for F in self.Ek:
             F = ifftshift(F, axes=(1,2))
-            self.E.append(ifftn(F))
+            self.E.append(fft(ifftn(F, axes=(1,2)), axis=0))
         self.E_sq = 0.
         for F in self.E: self.E_sq += pulse.real(F, self.r_type)**2
         self.H = []
         try:
             for F in self.Hk:
                 F = ifftshift(F, axes=(1,2))
-                self.H.append(ifftn(F))
+                self.H.append(fft(ifftn(F, axes=(1,2)), axis=0))
             self.H_sq = 0.
             for F in self.H: self.H_sq += pulse.real(F, self.r_type)**2
             self.EH = 0.
@@ -87,30 +95,3 @@ class pulse():
             return abs(F)
         elif r_type == 'osc':
             return np.real(1./2. * (F + F.conjugate()))
-
-    def rescale(self, scale):
-        pass
-
-
-
-
-'''
-class vec_field(np.ndarray):
-
-    def __init__(self, matrixes, real_type):
-        self.x = matrixes[0]
-        self.y = matrixes[1]
-        self.z = matrixes[2]
-        self.real_type = real_type
-
-    def __pow__(self, n):
-        if self.real_type == 'abs':
-            return abs(self.x)**n + abs(self.z)**n + abs(self.z)**n
-        elif self.real_type == 'osc':
-            pw_x = np.real(1./2. * (self.x + self.x.conjugate()))**n
-            pw_y = np.real(1./2. * (self.y + self.y.conjugate()))**n
-            pw_z = np.real(1./2. * (self.z + self.z.conjugate()))**n
-            return pw_x + pw_y + pw_z
-        else:
-            return self.x**2 + self.y**2 + self.z**2
-'''
