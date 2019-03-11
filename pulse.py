@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.integrate as spint
-from scipy.fftpack import fftn, ifftn, fftshift, ifftshift
+from scipy.fftpack import fftn, ifftn, fftshift, ifftshift, ifft, fft
 
 class pulse():
 
@@ -23,7 +23,8 @@ class pulse():
 
     def define_Ekz(self):
         self.ky, self.omega, self.kx = np.meshgrid(self.lk, self.l_omega, self.lk)
-        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
+        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
+        self.kz = self.kz.conjugate()
         Ekz = -(self.Ek_bound[0] * self.kx + self.Ek_bound[1] * self.ky)/self.kz
         self.Ek_bound.append(Ekz)
 
@@ -37,11 +38,11 @@ class pulse():
         if not paraxial:
             self.propagator = np.exp(-1j*np.kz)
         else:
-            self.propagator = np.exp(-1j*self.omega/pulse.c*(1 - pulse.c**2*(self.kx*2 + self.ky**2)/2/self.omega**2)
+            self.propagator = np.exp(-1j*self.omega/pulse.c*(1 - pulse.c**2*(self.kx*2 + self.ky**2)/2/self.omega**2))
 
     def make_ksi_propagator(self, paraxial):
         if not paraxial:
-            self.propagator = np.exp(1j*(self.omega/pulse.c - self.kz)
+            self.propagator = np.exp(1j*(self.omega/pulse.c - self.kz))
         else:
             self.propagator = np.exp(1j*pulse.c*(self.kx*2 + self.ky**2)/2/self.omega)
 

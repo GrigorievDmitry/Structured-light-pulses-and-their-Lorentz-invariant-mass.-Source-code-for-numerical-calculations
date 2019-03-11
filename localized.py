@@ -53,6 +53,7 @@ def field(point, name, w0, scalar=False):
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
+    
 #@njit(nogil=True, parallel=True)
 def spec_envelop(omega_range, omega0, k, tp):
     env = np.zeros(omega_range.shape[0], dtype=np.complex128)
@@ -66,6 +67,10 @@ def spec_envelop(omega_range, omega0, k, tp):
             pass
     return env
 #    return np.exp(-(omega - omega0)**2/delta_omega**2)
+        
+def temporal_envelop(t, k, tp, omega0):
+    env = (np.exp(k**2/2 - (t - k*tp)**2/2/tp**2) - 1) * np.sin(omega0*t)
+    return env
 
 #Boundary additional modulation
 def field_modulation(x, y):
@@ -91,12 +96,13 @@ c = 3 * 10**8 #Speed of light
 lambda0 = 404 * 10**(-9) #Wavelength
 w0 = 10 * lambda0 #Waist
 W = 1. #Total energy of pulse.
-k = 8. #Scale factor of z-axis
+k = 2. #Scale factor of z-axis
 t_scale = 30. #Time scale factor
 t0 = 0 #Initial timestep
-T = 10 #Number of timesteps
+T = 100 #Number of timesteps
 l0 = 10. #Transverse window size in [w0]
 time_window_number = 1 #Number of different space scales (for different time)
+tp = 3*10**(-13)
 
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
@@ -130,47 +136,50 @@ z_offset = []
 saleh_teich_intensity = []
 
 for twn in range(time_window_number):
-    loc_pulse = pulse(field, l*(twn + 1), k, r_type, *(f_type, w0, scalar))
+    loc_pulse = pulse(field, l*(twn + 1), r_type, *(f_type, w0, scalar))
     loc_pulse.spatial_bound_ft()
-    loc_pulse.spec_envelop =
+    temp_range = np.linspace(0, 2*k*tp)
+    loc_pulse.temporal_bound_ft(temporal_envelop, temp_range, *(k, tp, omega0))
+    loc_pulse.define_Ekz()
+    loc_pulse.make_ksi_propagator(paraxial)
     y, z, x = np.meshgrid(l, l/k, l)
     for t in range(T):
         print(t)
-        tau = (t + t0 + twn * T) * t_scale * w0/c
-        I = saleh_teich(x, y, z, tau)
-        saleh_teich_intensity.append(I)
+        z = (t + t0 + twn * T) * w0/c
+#        I = saleh_teich(x, y, z, tau)
+#        saleh_teich_intensity.append(I)
 
-        loc_pulse.propagate(spec_envelop, tau, paraxial)
+        loc_pulse.propagate(z)
         loc_pulse.magnetic()
         loc_pulse.evolution()
 
         p4k = loc_pulse.momentum()
-        energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lk, loc_pulse.lk, loc_pulse.lkz)) for i in range(4)]
+#        energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lk, loc_pulse.lk, loc_pulse.lkz)) for i in range(4)]
 
 
         if t == 0:
-            energy0 = energy
+            energy0 = 1#energy
 
-        mass_t = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - (px**2 + py**2 + pz**2)) / energy0
-        mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
+#        mass_t = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - (px**2 + py**2 + pz**2)) / energy0
+#        mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
         intensity_t = loc_pulse.E_sq / energy0
-        m_t = pulse.tripl_integrate(mu_t, (l, l, l/k))
-        velosity_t = np.sqrt(1 - (mass_t**2 * c**4) * energy0**2/energy**2)
-        offset = (velosity_t * c * tau)%(2*l0*w0/k)
-        velosity_t = velosity_t - 1.
-        angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
-
-        mu.append(mu_t)
-        mass.append(mass_t)
-        m.append(m_t)
+#        m_t = pulse.tripl_integrate(mu_t, (l, l, l/k))
+#        velosity_t = np.sqrt(1 - (mass_t**2 * c**4) * energy0**2/energy**2)
+#        offset = (velosity_t * c * tau)%(2*l0*w0/k)
+#        velosity_t = velosity_t - 1.
+#        angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
+#
+#        mu.append(mu_t)
+#        mass.append(mass_t)
+#        m.append(m_t)
         intensity.append(intensity_t)
-        velosity.append(velosity_t)
-        angle.append(angle_t)
-        z_offset.append(int(offset//(2*l0*w0/k/n)))
+#        velosity.append(velosity_t)
+#        angle.append(angle_t)
+#        z_offset.append(int(offset//(2*l0*w0/k/n)))
 
-mass = np.array(mass)
-m = np.array(m)
-velosity = np.array(velosity)
+#mass = np.array(mass)
+#m = np.array(m)
+#velosity = np.array(velosity)
 #==============================================================================
 
 
@@ -182,7 +191,7 @@ velosity = np.array(velosity)
 
 duration = 1 #Time in seconds for each frame in animation
 
-fp.plot(intensity, l, 'intensity', fold, t_scale * w0/c, z_offset)
+fp.plot(intensity, l, 'intensity', fold, t_scale * w0/c)
 fp.anim('intensity', fold, duration)
 
 #fp.plot(mu, l, 'mu')
