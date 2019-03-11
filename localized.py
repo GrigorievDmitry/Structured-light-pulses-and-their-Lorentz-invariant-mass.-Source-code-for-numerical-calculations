@@ -1,9 +1,9 @@
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from scipy.special import jv, assoc_laguerre, eval_hermite, erf
 import time
 import os
-
+from numba import njit, prange
 from pulse import pulse
 import field_plotter as fp
 
@@ -11,10 +11,10 @@ import field_plotter as fp
 
 #Defines field boundary conditions
 def field(point, name, w0, scalar=False):
-    
+
     x = point[0]
     y = point[1]
-    
+
     if name == 'G':
         E = np.exp(-(x**2 + y**2)/w0**2)
         if scalar:
@@ -25,7 +25,7 @@ def field(point, name, w0, scalar=False):
             Ex = - E * np.sin(alpha)
             Ey = E * np.cos(alpha)
         return Ex * field_modulation(x/w0, y/w0), Ey * field_modulation(x/w0, y/w0)
-    
+
     if name == 'BG':
         beta = 1./w0
         r = beta * np.sqrt(x**2 + y**2)
@@ -34,7 +34,7 @@ def field(point, name, w0, scalar=False):
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
-    
+
     if name == 'LG':
         l = 1
         r = (np.sqrt(2*x**2 + 2*y**2)/w0)
@@ -44,7 +44,7 @@ def field(point, name, w0, scalar=False):
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
-    
+
     if name == 'HG':
         l = 1
         m = 1
@@ -53,11 +53,17 @@ def field(point, name, w0, scalar=False):
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
-
-def spec_envelop(omega, omega0, k, tp):
-    env = 1j * tp * np.exp(1j*(omega - omega0)*k*tp) * (np.sqrt(2) * np.exp(k**2/2 - (omega - omega0)**2 * tp**2/2) *\
-            (erf(k/np.sqrt(2) + 1j*(omega - omega0)*k*tp/np.sqrt(2)) + erf(k/np.sqrt(2) - 1j*(omega - omega0)*k*tp/np.sqrt(2))) -\
-            2*k*np.sinc((omega - omega0)*k*tp))
+#@njit(nogil=True, parallel=True)
+def spec_envelop(omega_range, omega0, k, tp):
+    env = np.zeros(omega_range.shape[0], dtype=np.complex128)
+    for i in prange(omega_range.shape[0]):
+        omega = omega_range[i]
+        try:
+            env[i] = 1j * tp * np.exp(1j*(omega - omega0)*k*tp) * (np.sqrt(2) * np.exp(k**2/2 - (omega - omega0)**2 * tp**2/2) *\
+                    (erf(k/np.sqrt(2) + 1j*(omega - omega0)*k*tp/np.sqrt(2)) + erf(k/np.sqrt(2) - 1j*(omega - omega0)*k*tp/np.sqrt(2))) -\
+                    2*k*np.sinc((omega - omega0)*k*tp))
+        except Exception:
+            pass
     return env
 #    return np.exp(-(omega - omega0)**2/delta_omega**2)
 
@@ -65,7 +71,7 @@ def spec_envelop(omega, omega0, k, tp):
 def field_modulation(x, y):
     return 1.
     #return np.cos(x**2 + y**2)
-    
+
 def saleh_teich(x, y, z, t):
     rho = np.sqrt(x**2 + y**2)
     tau0 = 1./delta_omega/np.pi
@@ -77,8 +83,8 @@ def saleh_teich(x, y, z, t):
     I = np.exp(-2*np.pi*N * rho**2/(rho**2 + rho0**2))/(1 + rho**2/rho0**2) * \
         np.exp(-2*t_rho**2/tau_rho**2)/(1 + t_rho**2/(np.pi*N*tau0)**2)
     return I
-    
-    
+
+
 #================================PARAMETERS====================================
 n = 100 #Spatial grid steps
 c = 3 * 10**8 #Speed of light
@@ -94,8 +100,8 @@ time_window_number = 1 #Number of different space scales (for different time)
 
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
-paraxial = True #Use of paraxial approximation
-scalar = False #Evaluate scalar field
+paraxial = False #Use of paraxial approximation
+scalar = True #Evaluate scalar field
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 #Data structure: pic/(f_type)_(folder_suffix)/files
 #==============================================================================
@@ -125,24 +131,25 @@ saleh_teich_intensity = []
 
 for twn in range(time_window_number):
     loc_pulse = pulse(field, l*(twn + 1), k, r_type, *(f_type, w0, scalar))
+    loc_pulse.spectral_env(spec_envelop, *(omega0, 2, lambda0/c))
     y, z, x = np.meshgrid(l, l/k, l)
     for t in range(T):
         print(t)
         tau = (t + t0 + twn * T) * t_scale * w0/c
         I = saleh_teich(x, y, z, tau)
         saleh_teich_intensity.append(I)
-        
-        loc_pulse.propagate(spec_envelop, tau, paraxial, *(omega0, 10, lambda0/c))
+
+        loc_pulse.propagate(spec_envelop, tau, paraxial)
         loc_pulse.magnetic()
         loc_pulse.evolution()
-        
+
         p4k = loc_pulse.momentum()
         energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lk, loc_pulse.lk, loc_pulse.lkz)) for i in range(4)]
-        
-        
+
+
         if t == 0:
             energy0 = energy
-    
+
         mass_t = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - (px**2 + py**2 + pz**2)) / energy0
         mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
         intensity_t = loc_pulse.E_sq / energy0
@@ -151,7 +158,7 @@ for twn in range(time_window_number):
         offset = (velosity_t * c * tau)%(2*l0*w0/k)
         velosity_t = velosity_t - 1.
         angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
-    
+
         mu.append(mu_t)
         mass.append(mass_t)
         m.append(m_t)
@@ -159,7 +166,7 @@ for twn in range(time_window_number):
         velosity.append(velosity_t)
         angle.append(angle_t)
         z_offset.append(int(offset//(2*l0*w0/k/n)))
-    
+
 mass = np.array(mass)
 m = np.array(m)
 velosity = np.array(velosity)
