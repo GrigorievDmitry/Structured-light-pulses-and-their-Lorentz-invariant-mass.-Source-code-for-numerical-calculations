@@ -50,5 +50,5 @@ intensity = np.transpose(intensity, (1,0,2,3))
 print(intensity.shape)
 
 fps = 1
-fp.plot(intensity, l, 'intensity', fold, z_scale)
+fp.plot(intensity, l, 'intensity', fold, t_scale, mode = 'uniform')
 fp.anim('intensity', fold, fps)

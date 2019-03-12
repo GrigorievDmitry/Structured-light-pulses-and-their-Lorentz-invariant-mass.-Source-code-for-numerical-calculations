@@ -69,7 +69,7 @@ def spec_envelop(omega_range, omega0, k, tp):
 #    return np.exp(-(omega - omega0)**2/delta_omega**2)
         
 def temporal_envelop(t, k, tp, omega0):
-    env = (np.exp(k**2/2 - (t - k*tp)**2/2/tp**2) - 1) * np.sin(omega0*t)
+    env = (np.exp(k**2/2 - (t - k*tp)**2/2/tp**2) - 1) * np.exp(1j*omega0*t)
     return env
 
 #Boundary additional modulation
@@ -96,7 +96,7 @@ c = 3 * 10**8 #Speed of light
 lambda0 = 404 * 10**(-9) #Wavelength
 w0 = 10 * lambda0 #Waist
 W = 1. #Total energy of pulse.
-k = 2. #Scale factor of z-axis
+k = 0.1 #Scale factor of z-axis
 t_scale = 30. #Time scale factor
 t0 = 0 #Initial timestep
 T = 100 #Number of timesteps
@@ -141,11 +141,11 @@ for twn in range(time_window_number):
     temp_range = np.linspace(0, 2*k*tp, n)
     loc_pulse.temporal_bound_ft(temporal_envelop, temp_range, *(k, tp, omega0))
     loc_pulse.define_Ekz()
-    loc_pulse.make_ksi_propagator(paraxial)
+    loc_pulse.make_t_propagator(paraxial)
     y, z, x = np.meshgrid(l, l/k, l)
     for t in range(T):
         print(t)
-        z = (t + t0 + twn * T) * w0/c
+        z = (t + t0 + twn * T) * w0
 #        I = saleh_teich(x, y, z, tau)
 #        saleh_teich_intensity.append(I)
 

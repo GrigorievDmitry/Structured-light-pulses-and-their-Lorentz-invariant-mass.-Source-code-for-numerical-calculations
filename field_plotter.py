@@ -17,7 +17,7 @@ def plot2d2(M1, M2, limits, t, v=(None, None)):
                    vmax=M_max, vmin=M_min)
     fig.colorbar(im, ax=ax2, shrink=0.9)
     preset(ax2, 'x [mcm]', 'z [mcm]', '%.2f' %t + ' ps')
-    plt.show()
+#    plt.show()
 
 #Plots a simple picture
 def plot2d(M, l, v=(None, None)):
@@ -27,7 +27,7 @@ def plot2d(M, l, v=(None, None)):
                    origin='lower', extent=[l.min(), l.max(), l.min(), l.max()],
                    vmax=M_max, vmin=M_min)
     fig.colorbar(im, ax=ax, shrink=0.9)
-    plt.show()
+#    plt.show()
 
 #Defines picture contents
 def plot(E, l, name, fold, time_scale, z_offset=None, mode=None):
@@ -41,7 +41,7 @@ def plot(E, l, name, fold, time_scale, z_offset=None, mode=None):
     while True:
         try:
             if z_offset == None:
-                offset = m
+                offset = 0
             elif z_offset[i] <= m:
                 offset = m - z_offset[i]
             else:
@@ -59,6 +59,7 @@ def plot(E, l, name, fold, time_scale, z_offset=None, mode=None):
             figManager.window.showMaximized()
             filename = fold + '/' + name + f'_{i}.png'
             plt.savefig(filename)
+            plt.close(plt.gcf())
             i += 1
         except IndexError:
             break

@@ -26,7 +26,7 @@ class pulse():
     def temporal_bound_ft(self, temp_envelop, temporal_range, *args):
         self.t = temporal_range
         self.nt = len(temporal_range)
-        self.spec_envelop = ifft(temp_envelop(self.t, *args))
+        self.spec_envelop = ifft(temp_envelop(self.t, *args)).reshape(self.nt, 1, 1)
         self.l_omega = np.linspace(0, self.nt/(temporal_range[-1] - temporal_range[0]), self.nt)
 
     def define_Ekz(self):
@@ -44,7 +44,7 @@ class pulse():
 
     def make_t_propagator(self, paraxial):
         if not paraxial:
-            self.propagator = np.exp(-1j*np.kz)
+            self.propagator = np.exp(-1j*self.kz)
         else:
             self.propagator = np.exp(-1j*self.omega/pulse.c*(1 - pulse.c**2*(self.kx*2 + self.ky**2)/2/self.omega**2))
 
@@ -55,7 +55,7 @@ class pulse():
             self.propagator = np.exp(1j*pulse.c*(self.kx*2 + self.ky**2)/2/self.omega)
 
     def propagate(self, z):
-        self.Ek = [Eb * self.propagator**z for Eb in self.Ek_bound]
+        self.Ek = [Eb * self.spec_envelop * self.propagator**z for Eb in self.Ek_bound]
 
     def evolution(self):
         self.E = []
