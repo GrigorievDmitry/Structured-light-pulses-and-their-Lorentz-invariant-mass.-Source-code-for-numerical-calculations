@@ -3,33 +3,49 @@ import scipy.integrate as spint
 from scipy.fftpack import fftn, ifftn, fftshift, ifftshift, ifft, fft
 import os
 
-def save_result(result):
+def save_result(result, number):
     path = os.getcwd() + '/test'
     if not os.path.exists(path):
         os.makedirs(path)
-    f_name = '/test.npy'
+    f_name = '/test' + str(number) + '.npy'
     np.save(path + f_name, result)
 
 class pulse():
 
-    c = 3 * 10**8
+    c = 0.3 #Speed of light [microns/femtoseconds]
     def __init__(self, boundary, trvs_range, real_type='abs', *args):
         self.l = trvs_range
         self.n = len(trvs_range)
         self.r_type = real_type
         self.E_bound = boundary(np.meshgrid(self.l, self.l), *args)
-        #self.E_bound = boundary(self.l)
 
     def spatial_bound_ft(self):
         self.lk = 2*np.pi*np.linspace(-self.n/2/(self.l[-1] - self.l[0]), self.n/2/(self.l[-1] - self.l[0]), self.n)
         self.Ek_bound = [fftshift(ifftn(Eb)) for Eb in self.E_bound]
-        #self.Ek_bound = fftshift(fftn(self.E_bound))
 
-    def temporal_bound_ft(self, temp_envelop, temporal_range, *args):
+    def temporal_bound_ft(self, temp_envelop, temporal_range, enable_shift, *args):
         self.t = temporal_range
+        self.spectral_shift = enable_shift
         self.nt = len(temporal_range)
         self.spec_envelop = fft(temp_envelop(self.t, *args)).reshape(self.nt, 1, 1)
-        self.l_omega = 2*np.pi*np.linspace(4*self.nt/2/(temporal_range[-1] - temporal_range[0]), 6*self.nt/2/(temporal_range[-1] - temporal_range[0]), self.nt)
+        self.freq_shift = 0
+        if self.spectral_shift:
+            self.spec_envelop = fftshift(self.spec_envelop)
+            self.freq_shift = -1
+
+    def make_spectral_range(self):
+        self.l_omega = 2*np.pi*np.linspace(self.freq_shift*self.nt/2/(self.t[-1] - self.t[0]), \
+                        (2+self.freq_shift)*self.nt/2/(self.t[-1] - self.t[0]), self.nt)
+
+    def center_spectral_range(self, omega0):
+        self.make_spectral_range()
+        while self.l_omega.max() < omega0 or self.l_omega.min() > omega0:
+            if self.l_omega.max() < omega0:
+                self.freq_shift += 2
+                self.make_spectral_range()
+            elif self.l_omega.min() > omega0:
+                self.freq_shift -= 2
+                self.make_spectral_range()
 
     def define_Ekz(self):
         self.ky, self.omega, self.kx = np.meshgrid(self.lk, self.l_omega, self.lk)
@@ -59,17 +75,23 @@ class pulse():
     def propagate(self):
         self.Ek = [Eb * self.spec_envelop * self.propagator for Eb in self.Ek_bound]
 
-    def evolution(self):
+    def inverse_ft(self):
         self.E = []
         for F in self.Ek:
-            F = ifftshift(F, axes=(1,2))
+            if self.spectral_shift:
+                F = ifftshift(F)
+            else:
+                F = ifftshift(F, axes=(1,2))
             self.E.append(ifft(fftn(F, axes=(1,2)), axis=0))
         self.E_sq = 0.
         for F in self.E: self.E_sq += (pulse.real(F, self.r_type))**2
         self.H = []
         try:
             for F in self.Hk:
-                F = ifftshift(F, axes=(1,2))
+                if self.spectral_shift:
+                    F = ifftshift(F)
+                else:
+                    F = ifftshift(F, axes=(1,2))
                 self.H.append(ifft(fftn(F, axes=(1,2)), axis=0))
             self.H_sq = 0.
             for F in self.H: self.H_sq += (pulse.real(F, self.r_type))**2

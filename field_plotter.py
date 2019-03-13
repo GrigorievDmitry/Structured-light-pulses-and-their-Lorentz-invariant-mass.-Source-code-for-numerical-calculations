@@ -31,7 +31,7 @@ def plot2d(M, l, v=(None, None)):
 
 #Defines picture contents
 def plot(E, l, name, fold, time_scale, z_offset=None, mode=None):
-    m = int(len(l)/2)
+    m = int(l.shape[0]/2)
     if mode =='uniform':
         M_min = abs(E).min()
         M_max = abs(E).max()
@@ -50,11 +50,11 @@ def plot(E, l, name, fold, time_scale, z_offset=None, mode=None):
                 z_max = np.argmax(E[i][:,m,m])
                 M1 = abs(E[i][z_max])
                 M2 = abs(np.concatenate((E[i][offset:,:,m], E[i][0:offset,:,m])))
-                l1 = round(l[0] * 10**6, 1)
-                l2 = round(l[-1] * 10**6, 1)
+                l1 = np.round(l[0] * 10**6, 1)
+                l2 = np.round(l[-1] * 10**6, 1)
                 limits = [l1, l2]
                 limits.extend(limits)
-                tau = i * time_scale * 10**12
+                tau = i * time_scale
                 plot2d2(M1, M2, limits, tau, (M_min, M_max))
                 figManager = plt.get_current_fig_manager()
                 figManager.window.showMaximized()
