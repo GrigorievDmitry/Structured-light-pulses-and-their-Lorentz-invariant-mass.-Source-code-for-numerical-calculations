@@ -40,26 +40,27 @@ def plot(E, l, name, fold, time_scale, z_offset=None, mode=None):
     i = 0
     while True:
         try:
-            if z_offset == None:
-                offset = 0
-            elif z_offset[i] <= m:
-                offset = m - z_offset[i]
-            else:
-                offset = 3*m - z_offset[i]
-            z_max = np.argmax(E[i][:,m,m])
-            M1 = abs(E[i][z_max])
-            M2 = abs(np.concatenate((E[i][offset:,:,m], E[i][0:offset,:,m])))
-            l1 = round(l[0] * 10**6, 1)
-            l2 = round(l[-1] * 10**6, 1)
-            limits = [l1, l2]
-            limits.extend(limits)
-            tau = i * time_scale * 10**12
-            plot2d2(M1, M2, limits, tau, (M_min, M_max))
-            figManager = plt.get_current_fig_manager()
-            figManager.window.showMaximized()
-            filename = fold + '/' + name + f'_{i}.png'
-            plt.savefig(filename)
-            plt.close(plt.gcf())
+            if i%1 ==0:
+                if z_offset == None:
+                    offset = 0
+                elif z_offset[i] <= m:
+                    offset = m - z_offset[i]
+                else:
+                    offset = 3*m - z_offset[i]
+                z_max = np.argmax(E[i][:,m,m])
+                M1 = abs(E[i][z_max])
+                M2 = abs(np.concatenate((E[i][offset:,:,m], E[i][0:offset,:,m])))
+                l1 = round(l[0] * 10**6, 1)
+                l2 = round(l[-1] * 10**6, 1)
+                limits = [l1, l2]
+                limits.extend(limits)
+                tau = i * time_scale * 10**12
+                plot2d2(M1, M2, limits, tau, (M_min, M_max))
+                figManager = plt.get_current_fig_manager()
+                figManager.window.showMaximized()
+                filename = fold + '/' + name + f'_{i}.png'
+                plt.savefig(filename)
+                plt.close(plt.gcf())
             i += 1
         except IndexError:
             break
@@ -70,8 +71,9 @@ def anim(name, fold, duration):
     i = 0
     while True:
         try:
-            filename = fold + '/' + name + f'_{i}.png'
-            images.append(imageio.imread(filename))
+            if i%1 ==0:
+                filename = fold + '/' + name + f'_{i}.png'
+                images.append(imageio.imread(filename))
             i += 1
         except FileNotFoundError:
             break

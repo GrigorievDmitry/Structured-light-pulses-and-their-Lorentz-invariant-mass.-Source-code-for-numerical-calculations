@@ -1,0 +1,25 @@
+from pulse import pulse
+import numpy as np
+import matplotlib.pyplot as plt
+
+# def test(t):
+#     x = np.empty(t.shape[0], dtype=np.float64)
+#     for i in range(t.shape[0]):
+#         if t[i] >= 6 and t[i] <= 8:
+#             x[i] = 1 * 1j * np.exp(-1j*7*t[i])
+#         else:
+#             x[i] = 0
+#     return x
+#
+# t = np.linspace(-5, 20, 100)
+# loc = pulse(test, t)
+# loc.spatial_bound_ft()
+# plt.figure()
+# plt.plot(loc.lk, np.real(loc.Ek_bound))
+# plt.figure()
+# plt.plot(loc.lk, np.imag(loc.Ek_bound))
+# plt.figure()
+# plt.plot(loc.lk, np.abs(loc.Ek_bound))
+# plt.show()
+
+np.array([)
