@@ -118,6 +118,36 @@ l0 = 5. #Transverse window size in [w0]
 time_window_number = 1 #Number of different space scales (for different time)
 
 
+
+#===FUNDAMENTAL PARAMETRS OF A PULSE================#
+lambda0 = 0.4 (# microns#) (#10**(-4) cantimeters #)
+omega0 =  2*np.pi* 2.99792458/4 #(10**15 seconds^(-1)#
+n_burst = 40
+tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
+w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
+
+#====CALCULATION AND PLOT SCALES ====================#
+
+#1 . FOR Boundary CONDITIONS#
+#1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
+scale_x = 5*w0
+scale_y = 5*w0
+points_x = 100
+points_y = 100
+x = np.linspace(-scale_x,scale_x, points_x)
+y = np.linspace(-scale_y,scale_y, points_y)
+#1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
+tp_max = (1/2)*tp_full
+scale_t = 5*tp_full
+points_t = 100 (#Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+t = np.linspace(- scale_t, scale_t, points_t) + tp_max
+#1.3 SCALES OF Z - COORDINATE#
+scale_factor = 5 #NUBLER OF PULSE LENGTH IN Z COORDINATE#
+z_scale = scale_factor*(lambda0*nburst)
+points_z = scale_factor*100
+z = np.linspace(0, z_scale, points_z)
+
+
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
@@ -155,10 +185,10 @@ loc_pulse.spatial_bound_ft()
 temp_range = np.linspace(0, 20*k*tp, 10*20 + 1)
 loc_pulse.temporal_bound_ft(temporal_envelop, temp_range, *(k, tp, omega0))
 loc_pulse.define_Ekz()
-y, z, x = np.meshgrid(l, l/k, l)
-for t in range(T):
-    print(t)
-    z = (t) * nn * w0/T
+#y, z, x = np.meshgrid(l, l/k, l)
+for j in range(T):
+    print(j)
+    z = (j) * nn * w0/T
 #        I = saleh_teich(x, y, z, tau)
 #        saleh_teich_intensity.append(I)
     loc_pulse.make_ksi_propagator(z, paraxial)
