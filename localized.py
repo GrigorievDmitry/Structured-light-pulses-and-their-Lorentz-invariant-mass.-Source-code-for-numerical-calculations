@@ -125,19 +125,20 @@ scale_t = 10*tp_full
 points_t = 200 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
 t = np.linspace(0, 2*scale_t, points_t) - 10*tp_max
 #1.3 SCALES OF Z - COORDINATE#
-scale_factor = 10 #NUBLER OF PULSE LENGTH IN Z COORDINATE#
+scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 20
+points_z = scale_factor * 25
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
 f_type = 'BG' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
-scalar = True #Evaluate scalar field
+scalar = False #Evaluate scalar field
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 #Data structure: pic/(f_type)_(folder_suffix)/files
 delimiter = '\\'
+batch_size = 25
 #==============================================================================
 
 
@@ -146,12 +147,10 @@ delimiter = '\\'
 t1 = time.time()
 
 mu = []
-mass = []
-m = []
 intensity = []
 velosity = []
 angle = []
-z_offset = []
+
 saleh_teich_intensity = []
 
 
@@ -188,11 +187,13 @@ for (j, z_point) in enumerate(z):
     velosity.append(velosity_t)
     angle.append(angle_t)
     
-#    if (j+1)%125 == 0:
-save_result(intensity, 'intensity', delimiter)#(j+1)//125)
-save_result(mu, 'mu', delimiter)#(j+1)//125)
+    if (j+1)%batch_size == 0:
+        save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
+        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
+        intensity = []
+        mu = []
+
 mass = mass * 10**(4-30) #[g]
-#intensity = []
 velosity = np.array(velosity)
 #==============================================================================
 
@@ -209,6 +210,8 @@ print(x.shape)
 np.save(file, x)
 file = fold + delimiter + 't_scale.npy'
 np.save(file, 2*scale_t/points_t)
+file = fold + delimiter + 'z_range.npy'
+np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
 plt.plot(loc_pulse.l_omega - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()

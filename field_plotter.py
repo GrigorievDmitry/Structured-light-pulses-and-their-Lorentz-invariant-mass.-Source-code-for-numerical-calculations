@@ -4,16 +4,16 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 #Plots a picture
-def plot2d2(M1, M2, limits, t, v=(None, None)):
+def plot2d2(M1, M2, limits1, limits2, t, v=(None, None)):
     M_min, M_max = v
     fig, (ax1, ax2) = plt.subplots(1, 2)
     im = ax1.imshow(M1, interpolation='bilinear', cmap=cm.Blues_r,
-                   origin='lower', extent=limits,
+                   origin='lower', extent=limits1,
                    vmax=M_max, vmin=M_min)
     fig.colorbar(im, ax=ax1, shrink=0.9)
     preset(ax1, 'x [mcm]', 'y [mcm]', '%.2f' %t + ' fs')
     im = ax2.imshow(M2, interpolation='bilinear', cmap=cm.Blues_r,
-                   origin='lower', extent=limits,
+                   origin='lower', extent=limits2,
                    vmax=M_max, vmin=M_min)
     fig.colorbar(im, ax=ax2, shrink=0.9)
     preset(ax2, 'x [mcm]', 'z [mcm]', '%.2f' %t + ' fs')
@@ -30,7 +30,7 @@ def plot2d(M, l, v=(None, None)):
 #    plt.show()
 
 #Defines picture contents
-def plot(E, l, name, fold, time_scale, delimiter, z_offset=None, mode=None):
+def plot(E, l, name, fold, time_scale, z_range, delimiter, z_offset=None, mode=None):
     m = int(l.shape[0]/2)
     if mode =='uniform':
         M_min = abs(E).min()
@@ -52,10 +52,12 @@ def plot(E, l, name, fold, time_scale, delimiter, z_offset=None, mode=None):
                 M2 = abs(np.concatenate((E[i][offset:,:,m], E[i][0:offset,:,m])))
                 l1 = np.round(l[0], 1)
                 l2 = np.round(l[-1], 1)
-                limits = [l1, l2]
-                limits.extend(limits)
+                z1 = np.round(z_range[0], 1)
+                z2 = np.round(z_range[-1], 1)
+                limits1 = [l1, l2, l1, l2]
+                limits2 = [l1, l2, z1, z2]
                 tau = i * time_scale
-                plot2d2(M1, M2, limits, tau, (M_min, M_max))
+                plot2d2(M1, M2, limits1, limits2, tau, (M_min, M_max))
                 figManager = plt.get_current_fig_manager()
                 figManager.window.showMaximized()
                 filename = fold + delimiter + name + f'_{i}.png'
