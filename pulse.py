@@ -3,11 +3,11 @@ import scipy.integrate as spint
 from scipy.fftpack import fftn, ifftn, fftshift, ifftshift, ifft, fft
 import os
 
-def save_result(result, number):
-    path = os.getcwd() + '/test'
+def save_result(result, name, delimiter, number=''):
+    path = os.getcwd() + delimiter + 'data'
     if not os.path.exists(path):
         os.makedirs(path)
-    f_name = '/test' + str(number) + '.npy'
+    f_name = delimiter + 'name' + str(number) + '.npy'
     np.save(path + f_name, result)
 
 class pulse():
@@ -115,12 +115,16 @@ class pulse():
         self.Hk = [Hx, Hy, Hz]
 
     def momentum(self):
-        eps = pulse.real(self.Ek[0], self.r_type)**2 + pulse.real(self.Ek[1], self.r_type)**2 + pulse.real(self.Ek[2], self.r_type)**2
-        r = self.omega
-        px = eps * self.kx/r
-        py = eps * self.ky/r
-        pz = eps * self.kz/r
-        return eps, px, py, pz
+        eps = 0.
+        for Eb in self.Ek_bound:
+            eps += np.abs(Eb * self.spec_envelop)**2
+        eps = eps * self.kz/self.omega
+        px = eps * self.kx/self.omega
+        py = eps * self.ky/self.omega
+        pz = eps * self.kz/self.omega
+        if np.imag(eps).all() != 0 or np.imag(px).all() != 0 or np.imag(py).all() != 0 or np.imag(pz).all() != 0:
+            raise ValueError('Complex energy!')
+        return np.real(eps), np.real(px), np.real(py), np.real(pz)
 
     @staticmethod
     def tripl_integrate(M, l):
