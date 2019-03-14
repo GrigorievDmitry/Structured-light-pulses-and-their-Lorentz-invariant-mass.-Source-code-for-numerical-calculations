@@ -7,7 +7,7 @@ def save_result(result, name, delimiter, number=''):
     path = os.getcwd() + delimiter + 'data'
     if not os.path.exists(path):
         os.makedirs(path)
-    f_name = delimiter + 'name' + str(number) + '.npy'
+    f_name = delimiter + name + str(number) + '.npy'
     np.save(path + f_name, result)
 
 class pulse():
