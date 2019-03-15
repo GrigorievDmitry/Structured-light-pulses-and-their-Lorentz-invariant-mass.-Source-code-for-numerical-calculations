@@ -117,17 +117,17 @@ scale_x = 5*w0
 scale_y = 5*w0
 points_x = 100
 points_y = 100
-y = x = np.linspace(-scale_x, scale_x, points_x)
-#y = np.linspace(-scale_y, scale_y, points_y)
+x = np.linspace(-scale_x, scale_x, points_x)
+y = np.linspace(-scale_y, scale_y, points_y)
 #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
 tp_max = (1/2)*tp_full
-scale_t = 10*tp_full
-points_t = 200 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+scale_t = 5*tp_full
+points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
 t = np.linspace(0, 2*scale_t, points_t) - 10*tp_max
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 25
+points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
@@ -138,7 +138,7 @@ scalar = False #Evaluate scalar field
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 #Data structure: pic/(f_type)_(folder_suffix)/files
 delimiter = '\\'
-batch_size = 25
+batch_size = 100
 #==============================================================================
 
 
@@ -154,7 +154,7 @@ angle = []
 saleh_teich_intensity = []
 
 
-loc_pulse = pulse(field, x, r_type, *(f_type, w0, scalar))
+loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
 loc_pulse.temporal_bound_ft(temporal_envelop, t, enable_shift, *(k, tp_max, omega0))
 loc_pulse.center_spectral_range(omega0)
@@ -171,7 +171,7 @@ for (j, z_point) in enumerate(z):
     loc_pulse.inverse_ft()
 
     p4k = loc_pulse.momentum()
-    energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lk, loc_pulse.lk, loc_pulse.l_omega)) for i in range(4)]
+    energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
 
 
     if j == 0:
@@ -203,6 +203,7 @@ velosity = np.array(velosity)
 #mu - Mass density; shape(T,n,n,n)
 #m - Integrated mass density; shape(T)
 #mass - Mass; shape(T), all elements are equal
+
 fold = os.getcwd() + delimiter + 'data'
 
 file = fold + delimiter + 'space.npy'
@@ -215,23 +216,7 @@ np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
 plt.plot(loc_pulse.l_omega - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
-#
-#fig, (ax1, ax2) = plt.subplots(1, 2)
-#ax1.plot(m)
-#field_fig_preset(ax1, 't', 'Integrated mass density')
-#ax2.plot(velosity)
-#field_fig_preset(ax2, 't', 'Velosity')
-#plt.savefig(fold + '/velosity.png')
-#
-#with open(fold + '/params.txt', 'w') as file:
-#    for par in params.keys():
-#        if len(par) < 7:
-#            file.write(par + ':\t\t')
-#        else:
-#            file.write(par + ':\t')
-#        val = '%.3e' %params[par] + '\n'
-#        file.write(val)
-#
+
 np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
 print('Mass = %.6e [g]' %(mass))
 

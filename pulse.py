@@ -13,14 +13,17 @@ def save_result(result, name, delimiter, number=''):
 class pulse():
 
     c = 0.3 #Speed of light [microns/femtoseconds]
-    def __init__(self, boundary, trvs_range, real_type='abs', *args):
-        self.l = trvs_range
-        self.n = len(trvs_range)
+    def __init__(self, boundary, x_range, y_range, real_type='abs', *args):
+        self.x = x_range
+        self.nx = len(x_range)
+        self.y = y_range
+        self.ny = len(y_range)
         self.r_type = real_type
-        self.E_bound = boundary(np.meshgrid(self.l, self.l), *args)
+        self.E_bound = boundary(np.meshgrid(self.x, self.y), *args)
 
     def spatial_bound_ft(self):
-        self.lk = 2*np.pi*np.linspace(-self.n/2/(self.l[-1] - self.l[0]), self.n/2/(self.l[-1] - self.l[0]), self.n)
+        self.lkx = 2*np.pi*np.linspace(-self.nx/2/(self.x[-1] - self.x[0]), self.nx/2/(self.x[-1] - self.x[0]), self.nx)
+        self.lky = 2*np.pi*np.linspace(-self.ny/2/(self.y[-1] - self.y[0]), self.ny/2/(self.y[-1] - self.y[0]), self.ny)
         self.Ek_bound = [fftshift(ifftn(Eb)) for Eb in self.E_bound]
 
     def temporal_bound_ft(self, temp_envelop, temporal_range, enable_shift, *args):
@@ -48,7 +51,7 @@ class pulse():
                 self.make_spectral_range()
 
     def define_Ekz(self):
-        self.ky, self.omega, self.kx = np.meshgrid(self.lk, self.l_omega, self.lk)
+        self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
         self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
         self.kz = self.kz.conjugate()
         Ekz = -(self.Ek_bound[0] * self.kx + self.Ek_bound[1] * self.ky)/self.kz
@@ -125,6 +128,11 @@ class pulse():
         if np.imag(eps).all() != 0 or np.imag(px).all() != 0 or np.imag(py).all() != 0 or np.imag(pz).all() != 0:
             raise ValueError('Complex energy!')
         return np.real(eps), np.real(px), np.real(py), np.real(pz)
+    
+    def set_filter(self, filt_function, *args):
+        filt = filt_function(np.meshgrid(self.x, self.y), *args)
+        filt = fftshift(ifftn(filt))
+        self.propagator = self.propagator * filt
 
     @staticmethod
     def tripl_integrate(M, l):
