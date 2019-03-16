@@ -8,6 +8,7 @@ delimiter = '\\'
 path = os.getcwd() + delimiter + 'data' + delimiter
 with open(path + 'type.txt', 'r') as file:
     f_type = file.read()
+f_type = f_type[:-1]
 
 fold = os.getcwd() + delimiter + 'pic' + delimiter + f_type + '_' + folder_suffix
 if not os.path.exists(fold):

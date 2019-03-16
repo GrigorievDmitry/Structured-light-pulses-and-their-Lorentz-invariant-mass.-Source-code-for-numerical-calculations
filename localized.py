@@ -111,17 +111,17 @@ def field_modulation(x, y):
 lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
 c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
-n_burst = 40
+n_burst = 400
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
-w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
+w0 = 5 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
 W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #====CALCULATION AND PLOT SCALES ====================#
 
 #1 . FOR Boundary CONDITIONS#
 #1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
-scale_x = 5*w0
-scale_y = 5*w0
+scale_x = 10*w0
+scale_y = 10*w0
 points_x = 100
 points_y = 100
 x = np.linspace(-scale_x, scale_x, points_x)
@@ -134,11 +134,11 @@ t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 40
+points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
-enable_shift = True
-f_type = 'BG' #Pulse type ('G', 'BG', 'LG', 'HG')
+enable_shift = False
+f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
 scalar = True #Evaluate scalar field
