@@ -80,7 +80,7 @@ def temporal_envelop_sin(t, k, tp, omega0):
     x = np.empty(t.shape[0], dtype=np.complex128)
     for i in range(t.shape[0]):
         if t[i] >= 0 and t[i] <= 2*k*tp:
-            x[i] = -np.exp(1j*omega0*t[i])
+#            x[i] = -np.exp(1j*omega0*t[i])
             x[i] = -1j*np.sin(omega0*t[i]/2)*np.exp(1j*omega0*t[i]/2)
         else:
             x[i] = 0
@@ -114,7 +114,7 @@ c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
 n_burst = 400
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
-w0 = 5 * lambda0 #(microns)# (#10**(-4) cantimeters#)
+w0 = 3 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
 W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #====CALCULATION AND PLOT SCALES ====================#
@@ -123,13 +123,13 @@ W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
 scale_x = 10*w0
 scale_y = 10*w0
-points_x = 200
-points_y = 200
+points_x = 100
+points_y = 100
 x = np.linspace(-scale_x, scale_x, points_x)
 y = np.linspace(-scale_y, scale_y, points_y)
 #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
 tp_max = (1/2)*tp_full
-scale_t = 5*tp_full
+scale_t = 10*tp_full
 points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
 t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
@@ -138,7 +138,7 @@ scale_z = scale_factor * (lambda0*n_burst)
 points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
-enable_shift = False
+enable_shift = True
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
@@ -163,7 +163,7 @@ saleh_teich_intensity = []
 
 loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
-loc_pulse.temporal_bound_ft(temporal_envelop, t, enable_shift, *(k, tp_max, omega0))
+loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 loc_pulse.center_spectral_range(omega0)
 
 loc_pulse.define_Ekz()

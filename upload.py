@@ -28,5 +28,5 @@ print(intensity.shape)
 
 fps = 0.1
 print(x.shape)
-fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter, mode = 'uniform')
+fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter)
 fp.anim('intensity', fold, fps, delimiter)
