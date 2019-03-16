@@ -81,6 +81,7 @@ def temporal_envelop_sin(t, k, tp, omega0):
     for i in range(t.shape[0]):
         if t[i] >= 0 and t[i] <= 2*k*tp:
             x[i] = -np.exp(1j*omega0*t[i])
+            x[i] = -1j*np.sin(omega0*t[i]/2)*np.exp(1j*omega0*t[i]/2)
         else:
             x[i] = 0
     return x
@@ -122,8 +123,8 @@ W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
 scale_x = 10*w0
 scale_y = 10*w0
-points_x = 100
-points_y = 100
+points_x = 200
+points_y = 200
 x = np.linspace(-scale_x, scale_x, points_x)
 y = np.linspace(-scale_y, scale_y, points_y)
 #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
@@ -162,7 +163,7 @@ saleh_teich_intensity = []
 
 loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
-loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
+loc_pulse.temporal_bound_ft(temporal_envelop, t, enable_shift, *(k, tp_max, omega0))
 loc_pulse.center_spectral_range(omega0)
 
 loc_pulse.define_Ekz()
