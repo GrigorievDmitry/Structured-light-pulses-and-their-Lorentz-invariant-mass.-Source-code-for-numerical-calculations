@@ -12,7 +12,7 @@ def save_result(result, name, delimiter, number=''):
 
 class pulse():
 
-    c = 0.3 #Speed of light [microns/femtoseconds]
+    c = 0.299792458 #* 10**(11) #Speed of light [microns/femtoseconds]
     def __init__(self, boundary, x_range, y_range, real_type='abs', *args):
         self.x = x_range
         self.nx = len(x_range)

@@ -38,7 +38,7 @@ def field(point, name, w0, scalar=False):
         l = 1
         r = (np.sqrt(2*x**2 + 2*y**2)/w0)
         G = assoc_laguerre(r**2, l)
-        E = r**l * G
+        E = r**l * G * np.exp(1j*l*np.arctan2(y,x))
         Ex, Ey = field(point, 'G', w0)
         Ex = Ex * E
         Ey = Ey * E
@@ -75,9 +75,15 @@ def temporal_envelop(t, k, tp, omega0):
         else:
             x[i] = 0
     return x
-# def temporal_envelop1(t, k, tp, omega0):
-#     x = 1j*(np.exp(-t**2/2/tp**2)) * np.exp(-1j*omega0*t)
-#     return x
+
+def temporal_envelop_sin(t, k, tp, omega0):
+    x = np.empty(t.shape[0], dtype=np.complex128)
+    for i in range(t.shape[0]):
+        if t[i] >= 0 and t[i] <= 2*k*tp:
+            x[i] = -np.exp(1j*omega0*t[i])
+        else:
+            x[i] = 0
+    return x
 
 
 
@@ -102,13 +108,14 @@ def field_modulation(x, y):
 
 #================================PARAMETERS====================================
 #===FUNDAMENTAL PARAMETRS OF A PULSE================#
-lambda0 = 0.4 # microns# #10**(-4) cantimeters #
-omega0 =  2*np.pi* 2.99792458/4 #(10**15 seconds^(-1)#
+lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
+c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
+omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
 n_burst = 40
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
-c = 0.3 #Speed of light [microns/femtoseconds]
+W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #====CALCULATION AND PLOT SCALES ====================#
 
 #1 . FOR Boundary CONDITIONS#
@@ -123,20 +130,19 @@ y = np.linspace(-scale_y, scale_y, points_y)
 tp_max = (1/2)*tp_full
 scale_t = 5*tp_full
 points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
-t = np.linspace(0, 2*scale_t, points_t) - 10*tp_max
+t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 20
+points_z = scale_factor * 40
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
 f_type = 'BG' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
-scalar = False #Evaluate scalar field
-folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
-#Data structure: pic/(f_type)_(folder_suffix)/files
+scalar = True #Evaluate scalar field
+
 delimiter = '\\'
 batch_size = 100
 #==============================================================================
@@ -156,7 +162,7 @@ saleh_teich_intensity = []
 
 loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
-loc_pulse.temporal_bound_ft(temporal_envelop, t, enable_shift, *(k, tp_max, omega0))
+loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 loc_pulse.center_spectral_range(omega0)
 
 loc_pulse.define_Ekz()
@@ -175,25 +181,26 @@ for (j, z_point) in enumerate(z):
 
 
     if j == 0:
-        energy0 = energy #g*micron/femtosec**2
-        mass = (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-    mu_t = (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
-    intensity_t = loc_pulse.S_abs / energy0
-    velosity_t = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2) - 1.
+        energy0 = energy #g*micron**2/femtosec**2
+        mass = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
+    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
+    intensity_t = W * loc_pulse.S_abs / energy0
+    velosity_t = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
     angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
     
-    mu.append(mu_t * 10**(4-30)) #[g]
-    intensity.append(intensity_t * 10**(4-30))
+    mu.append(mu_t * 10**(-13)) #[g]
+    intensity.append(intensity_t * 10**(10))
     velosity.append(velosity_t)
     angle.append(angle_t)
     
     if (j+1)%batch_size == 0:
+        intensity = np.array(intensity)
+        mu = np.array(mu)
         save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
         save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
         intensity = []
         mu = []
 
-mass = mass * 10**(4-30) #[g]
 velosity = np.array(velosity)
 #==============================================================================
 
@@ -206,6 +213,7 @@ velosity = np.array(velosity)
 
 fold = os.getcwd() + delimiter + 'data'
 
+np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
 file = fold + delimiter + 'space.npy'
 print(x.shape)
 np.save(file, x)

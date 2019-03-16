@@ -2,16 +2,17 @@ import numpy as np
 import field_plotter as fp
 import os
 #================================PARAMETERS====================================
-
-f_type = 'BG' #Pulse type ('G', 'BG', 'LG', 'HG')
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 delimiter = '\\'
+
+path = os.getcwd() + delimiter + 'data' + delimiter
+with open(path + 'type.txt', 'r') as file:
+    f_type = file.read()
 
 fold = os.getcwd() + delimiter + 'pic' + delimiter + f_type + '_' + folder_suffix
 if not os.path.exists(fold):
     os.makedirs(fold)
 
-path = os.getcwd() + delimiter + 'data' + delimiter
 f_name = 'intensity1.npy'
 intensity = np.load(path + f_name)
 f_name = 'space.npy'
