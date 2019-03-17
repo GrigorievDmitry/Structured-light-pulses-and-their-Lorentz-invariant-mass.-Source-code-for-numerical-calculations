@@ -114,7 +114,7 @@ c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
 n_burst = 400
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
-w0 = 3 * lambda0 #(microns)# (#10**(-4) cantimeters#)
+w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
 W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #====CALCULATION AND PLOT SCALES ====================#
@@ -135,7 +135,7 @@ t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 20
+points_z = scale_factor * 1
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
@@ -145,7 +145,7 @@ paraxial = False #Use of paraxial approximation
 scalar = True #Evaluate scalar field
 
 delimiter = '\\'
-batch_size = 100
+batch_size = 5
 #==============================================================================
 
 
@@ -157,6 +157,9 @@ mu = []
 intensity = []
 velosity = []
 angle = []
+enrg1 = []
+enrg2 = []
+
 
 saleh_teich_intensity = []
 
@@ -194,6 +197,10 @@ for (j, z_point) in enumerate(z):
     velosity.append(velosity_t)
     angle.append(angle_t)
     
+    enrg1.append(energy)
+    enrg2.append(loc_pulse.E_sq + loc_pulse.H_sq)
+    
+    
     if (j+1)%batch_size == 0:
         intensity = np.array(intensity)
         mu = np.array(mu)
@@ -203,6 +210,9 @@ for (j, z_point) in enumerate(z):
         mu = []
 
 velosity = np.array(velosity)
+enrg1 = np.array(enrg1)
+enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
+enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
 #==============================================================================
 
 
@@ -211,6 +221,9 @@ velosity = np.array(velosity)
 #mu - Mass density; shape(T,n,n,n)
 #m - Integrated mass density; shape(T)
 #mass - Mass; shape(T), all elements are equal
+
+plt.plot(enrg)
+plt.plot(enrg1)
 
 fold = os.getcwd() + delimiter + 'data'
 
