@@ -169,8 +169,7 @@ loc_pulse.spatial_bound_ft()
 #loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 #loc_pulse.center_spectral_range(omega0)
 omega_range = np.linspace(-omega0, 2*omega0, 150)
-spec = spectral_envelop(omega_range, tp_full, omega0)
-loc_pulse.set_spec_envelop(spec, omega_range)
+loc_pulse.set_spec_envelop(spectral_envelop, omega_range, *(tp_full, omega0))
 
 loc_pulse.define_Ekz()
 #y, z, x = np.meshgrid(l, l/k, l)
@@ -238,7 +237,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, 2*scale_t/points_t)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(omega_range - omega0, np.abs(spec))
+plt.plot(omega_range - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
 

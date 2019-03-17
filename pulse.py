@@ -57,10 +57,10 @@ class pulse():
         Ekz = -(self.Ek_bound[0] * self.kx + self.Ek_bound[1] * self.ky)/self.kz
         self.Ek_bound.append(Ekz)
 
-    def set_spec_envelop(self, spec_envelop, spec_range):
+    def set_spec_envelop(self, spec_envelop, spec_range, *args):
         self.l_omega = spec_range
         self.nt = len(spec_range)
-        self.spec_envelop = spec_envelop.reshape(self.nt, 1, 1)
+        self.spec_envelop = spec_envelop(self.l_omega, *args).reshape(self.nt, 1, 1)
         self.t = 2*np.pi*np.linspace(0, self.nt/(spec_range[-1] - spec_range[0]), self.nt)
         self.spectral_shift = False
 
@@ -134,6 +134,22 @@ class pulse():
         filt = filt_function(np.meshgrid(self.x, self.y), *args)
         filt = fftshift(ifftn(filt))
         self.propagator = self.propagator * filt
+    
+    def change_ref_frame(self, v):
+        beta = v/pulse.c
+        gamma = 1./np.sqrt(1 - beta**2)
+        
+        self.l_omega = gamma * (self.l_omega - beta * pulse.c * self.kz)
+        self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
+        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
+        self.kz = self.kz.conjugate()
+        
+        J = gamma * (1 + beta * pulse.c * self.omega/self.kz)
+        self.Ek[0] = gamma * J * (self.Ek[0] + beta * self.Hk[1])
+        self.Ek[1] = gamma * J * (self.Ek[1] - beta * self.Hk[0])
+        
+        self.Hk[0] = gamma * J * (self.Hk[0] - beta * self.Ek[1])
+        self.Hk[1] = gamma * J * (self.Hk[1] + beta * self.Ek[0])
 
     @staticmethod
     def tripl_integrate(M, l):
