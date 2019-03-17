@@ -19,6 +19,7 @@ class pulse():
         self.y = y_range
         self.ny = len(y_range)
         self.r_type = real_type
+        self.freq_shift = 0
         self.E_bound = boundary(np.meshgrid(self.x, self.y), *args)
 
     def spatial_bound_ft(self):
@@ -31,7 +32,6 @@ class pulse():
         self.spectral_shift = enable_shift
         self.nt = len(temporal_range)
         self.spec_envelop = fft(temp_envelop(self.t, *args)).reshape(self.nt, 1, 1)
-        self.freq_shift = 0
         if self.spectral_shift:
             self.spec_envelop = fftshift(self.spec_envelop)
             self.freq_shift = -1
@@ -58,10 +58,11 @@ class pulse():
         self.Ek_bound.append(Ekz)
 
     def set_spec_envelop(self, spec_envelop, spec_range):
-        self.spec_envelop = spec_envelop
         self.l_omega = spec_range
         self.nt = len(spec_range)
+        self.spec_envelop = spec_envelop.reshape(self.nt, 1, 1)
         self.t = 2*np.pi*np.linspace(0, self.nt/(spec_range[-1] - spec_range[0]), self.nt)
+        self.spectral_shift = False
 
     def make_t_propagator(self, z, paraxial):
         if not paraxial:
