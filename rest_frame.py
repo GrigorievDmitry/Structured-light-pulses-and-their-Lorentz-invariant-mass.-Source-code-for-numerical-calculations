@@ -89,7 +89,6 @@ def temporal_envelop_sin(t, k, tp, omega0):
 def spectral_envelop(omega, tp, omega0):
     return 1/2 * tp * np.exp(-1j*omega*tp/2) * (np.sinc(omega*tp/2/np.pi) - np.exp(1j*omega0*tp/2) * np.sinc((omega-omega0)*tp/2/np.pi))
 
-
 #Boundary additional modulation
 def field_modulation(x, y):
     return 1.
@@ -113,7 +112,7 @@ def field_modulation(x, y):
 lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
 c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
-n_burst = 400
+n_burst = 10
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
@@ -169,7 +168,7 @@ loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
 #loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 #loc_pulse.center_spectral_range(omega0)
-omega_range = np.linspace(10**(-2), 6*omega0, 1000)
+omega_range = np.linspace(-omega0, 2*omega0, 150)
 spec = spectral_envelop(omega_range, tp_full, omega0)
 loc_pulse.set_spec_envelop(spec, omega_range)
 
@@ -226,8 +225,8 @@ enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
 #m - Integrated mass density; shape(T)
 #mass - Mass; shape(T), all elements are equal
 
-plt.plot(enrg)
-plt.plot(enrg1)
+#plt.plot(enrg)
+#plt.plot(enrg1)
 
 fold = os.getcwd() + delimiter + 'data'
 
@@ -239,7 +238,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, 2*scale_t/points_t)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(loc_pulse.l_omega - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
+plt.plot(omega_range - omega0, np.abs(spec))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
 
