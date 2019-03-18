@@ -135,7 +135,7 @@ t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 1
+points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
@@ -145,7 +145,7 @@ paraxial = False #Use of paraxial approximation
 scalar = True #Evaluate scalar field
 
 delimiter = '\\'
-batch_size = 5
+batch_size = 100
 #==============================================================================
 
 
@@ -168,8 +168,14 @@ loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
 loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 loc_pulse.center_spectral_range(omega0)
-
 loc_pulse.define_Ekz()
+loc_pulse.magnetic()
+
+p4k = loc_pulse.momentum()
+energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
+energy0 = energy #g*micron**2/femtosec**2
+mass = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
+
 #y, z, x = np.meshgrid(l, l/k, l)
 for (j, z_point) in enumerate(z):
     print(j)
@@ -177,42 +183,34 @@ for (j, z_point) in enumerate(z):
 #        saleh_teich_intensity.append(I)
     loc_pulse.make_t_propagator(z_point, paraxial)
     loc_pulse.propagate()
-    loc_pulse.magnetic()
     loc_pulse.inverse_ft()
 
-    p4k = loc_pulse.momentum()
-    energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
-
-
-    if j == 0:
-        energy0 = energy #g*micron**2/femtosec**2
-        mass = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
+#    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
     intensity_t = W * loc_pulse.S_abs / energy0
     velosity_t = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
     angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
     
-    mu.append(mu_t * 10**(-13)) #[g]
+#    mu.append(mu_t * 10**(-13)) #[g]
     intensity.append(intensity_t * 10**(10))
     velosity.append(velosity_t)
     angle.append(angle_t)
     
-    enrg1.append(energy)
-    enrg2.append(loc_pulse.E_sq + loc_pulse.H_sq)
+#    enrg1.append(energy)
+#    enrg2.append(loc_pulse.E_sq + loc_pulse.H_sq)
     
     
     if (j+1)%batch_size == 0:
         intensity = np.array(intensity)
-        mu = np.array(mu)
+#        mu = np.array(mu)
         save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
-        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
+#        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
         intensity = []
-        mu = []
+#        mu = []
 
 velosity = np.array(velosity)
-enrg1 = np.array(enrg1)
-enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
-enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
+#enrg1 = np.array(enrg1)
+#enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
+#enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
 #==============================================================================
 
 
@@ -222,8 +220,8 @@ enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
 #m - Integrated mass density; shape(T)
 #mass - Mass; shape(T), all elements are equal
 
-plt.plot(enrg)
-plt.plot(enrg1)
+#plt.plot(enrg)
+#plt.plot(enrg1)
 
 fold = os.getcwd() + delimiter + 'data'
 

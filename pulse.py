@@ -61,8 +61,18 @@ class pulse():
         self.l_omega = spec_range
         self.nt = len(spec_range)
         self.spec_envelop = spec_envelop(self.l_omega, *args).reshape(self.nt, 1, 1)
-        self.t = 2*np.pi*np.linspace(0, self.nt/(spec_range[-1] - spec_range[0]), self.nt)
+        self.t = 2*np.pi*np.linspace(0, self.nt/(self.l_omega[-1] - self.l_omega[0]), self.nt)
         self.spectral_shift = False
+    
+    def magnetic(self):
+#        scal = (self.Ek[0]*self.kx + self.Ek[1]*self.ky + self.Ek[2]*self.kz).max()
+#        if scal > 10**(10):
+#            raise Exception('Non orthogonal E and k, (E,k) = %e' %scal)
+        norm = pulse.c/self.omega
+        Hx_bound = (self.Ek_bound[2] * self.ky - self.Ek_bound[1] * self.kz) * norm
+        Hy_bound = (self.Ek_bound[0] * self.kz - self.Ek_bound[2] * self.kx) * norm
+        Hz_bound = (self.Ek_bound[1] * self.kx - self.Ek_bound[0] * self.ky) * norm
+        self.Hk_bound = [Hx_bound, Hy_bound, Hz_bound]
 
     def make_t_propagator(self, z, paraxial):
         if not paraxial:
@@ -78,6 +88,7 @@ class pulse():
 
     def propagate(self):
         self.Ek = [Eb * self.spec_envelop * self.propagator for Eb in self.Ek_bound]
+        self.Hk = [Hb * self.spec_envelop * self.propagator for Hb in self.Hk_bound]
 
     def inverse_ft(self):
         self.E = []
@@ -108,16 +119,6 @@ class pulse():
         self.S = [self.E_real[1]*self.H_real[2] - self.E_real[2]*self.H_real[1], self.E_real[2]*self.H_real[0] - self.E_real[0]*self.H_real[2], self.E_real[0]*self.H_real[1] - self.E_real[1]*self.H_real[0]]
         self.S_abs = pulse.c/4/np.pi*np.sqrt(self.S[0]**2 + self.S[1]**2 + self.S[2]**2)
 
-    def magnetic(self):
-#        scal = (self.Ek[0]*self.kx + self.Ek[1]*self.ky + self.Ek[2]*self.kz).max()
-#        if scal > 10**(10):
-#            raise Exception('Non orthogonal E and k, (E,k) = %e' %scal)
-        norm = 1./self.omega
-        Hx = (self.Ek[2] * self.ky - self.Ek[1] * self.kz) * norm
-        Hy = (self.Ek[0] * self.kz - self.Ek[2] * self.kx) * norm
-        Hz = (self.Ek[1] * self.kx - self.Ek[0] * self.ky) * norm
-        self.Hk = [Hx, Hy, Hz]
-
     def momentum(self):
         eps = 0.
         for Eb in self.Ek_bound:
@@ -139,17 +140,23 @@ class pulse():
         beta = v/pulse.c
         gamma = 1./np.sqrt(1 - beta**2)
         
-        self.l_omega = gamma * (self.l_omega - beta * pulse.c * self.kz)
+        omega_1 = gamma * (self.omega - beta * pulse.c * self.kz)
+        self.l_omega = np.linspace(omega_1.min(), omega_1.max(), self.nt)
+        self.t = 2*np.pi*np.linspace(0, self.nt/(self.l_omega[-1] - self.l_omega[0]), self.nt)
         self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
         self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
         self.kz = self.kz.conjugate()
         
-        J = gamma * (1 + beta * pulse.c * self.omega/self.kz)
-        self.Ek[0] = gamma * J * (self.Ek[0] + beta * self.Hk[1])
-        self.Ek[1] = gamma * J * (self.Ek[1] - beta * self.Hk[0])
+        self.omega = gamma * (self.omega + beta * pulse.c * self.kz)
+        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
+        self.kz = self.kz.conjugate()
         
-        self.Hk[0] = gamma * J * (self.Hk[0] - beta * self.Ek[1])
-        self.Hk[1] = gamma * J * (self.Hk[1] + beta * self.Ek[0])
+        J = gamma * (1 + beta * pulse.c * self.omega/self.kz)
+        self.Ek_bound[0] = gamma * J * (self.Ek_bound[0] + beta * self.Hk_bound[1])
+        self.Ek_bound[1] = gamma * J * (self.Ek_bound[1] - beta * self.Hk_bound[0])
+        
+        self.Hk_bound[0] = gamma * J * (self.Hk_bound[0] - beta * self.Ek_bound[1])
+        self.Hk_bound[1] = gamma * J * (self.Hk_bound[1] + beta * self.Ek_bound[0])
 
     @staticmethod
     def tripl_integrate(M, l):
