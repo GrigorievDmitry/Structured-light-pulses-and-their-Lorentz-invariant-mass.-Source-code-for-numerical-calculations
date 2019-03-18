@@ -117,6 +117,7 @@ tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
 W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
+beta = 1-3*10**(-6)
 #====CALCULATION AND PLOT SCALES ====================#
 
 #1 . FOR Boundary CONDITIONS#
@@ -134,7 +135,7 @@ points_t = 100 #Number of points is choosen in accordance with spectrum detaliza
 t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
-scale_z = scale_factor * (lambda0*n_burst)
+scale_z = scale_factor * (lambda0*n_burst) * 1./np.sqrt(1 - beta**2)
 points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
@@ -172,6 +173,7 @@ omega_range = np.linspace(-omega0, 2*omega0, 150)
 loc_pulse.set_spec_envelop(spectral_envelop, omega_range, *(tp_full, omega0))
 loc_pulse.define_Ekz()
 loc_pulse.magnetic()
+loc_pulse.change_ref_frame(c*beta, spectral_envelop, *(tp_full, omega0))
 
 p4k = loc_pulse.momentum()
 energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
@@ -235,7 +237,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, 2*scale_t/points_t)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(omega_range - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
+#plt.plot(omega_range - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
 

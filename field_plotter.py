@@ -53,7 +53,7 @@ def plot(E, l, name, fold, time_scale, z_range, delimiter, z_offset=None, mode=N
                 l1 = np.round(l[0], 1)
                 l2 = np.round(l[-1], 1)
                 z1 = np.round(z_range[0], 1)
-                z2 = np.round(z_range[-1]/10, 1)
+                z2 = np.round(z_range[-1], 1)
                 limits1 = [l1, l2, l1, l2]
                 limits2 = [l1, l2, z1, z2]
                 tau = i * time_scale

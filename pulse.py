@@ -136,20 +136,19 @@ class pulse():
         filt = fftshift(ifftn(filt))
         self.propagator = self.propagator * filt
     
-    def change_ref_frame(self, v):
+    def change_ref_frame(self, v, spec_envelop, *args):
         beta = v/pulse.c
         gamma = 1./np.sqrt(1 - beta**2)
         
         omega_1 = gamma * (self.omega - beta * pulse.c * self.kz)
-        self.l_omega = np.linspace(omega_1.min(), omega_1.max(), self.nt)
+        self.l_omega = np.linspace(np.real(omega_1).min(), np.real(omega_1).max(), self.nt)
         self.t = 2*np.pi*np.linspace(0, self.nt/(self.l_omega[-1] - self.l_omega[0]), self.nt)
         self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
         self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
         self.kz = self.kz.conjugate()
         
-        self.omega = gamma * (self.omega + beta * pulse.c * self.kz)
-        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
-        self.kz = self.kz.conjugate()
+        omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
+        self.spec_envelop = spec_envelop(omega_1, *args)
         
         J = gamma * (1 + beta * pulse.c * self.omega/self.kz)
         self.Ek_bound[0] = gamma * J * (self.Ek_bound[0] + beta * self.Hk_bound[1])
