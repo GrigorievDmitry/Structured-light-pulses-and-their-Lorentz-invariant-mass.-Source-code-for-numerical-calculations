@@ -36,8 +36,9 @@ def field(point, name, w0, scalar=False):
 
     if name == 'LG':
         l = 1
+        q = 0
         r = (np.sqrt(2*x**2 + 2*y**2)/w0)
-        G = assoc_laguerre(r**2, l)
+        G = assoc_laguerre(r**2, l, q)
         E = r**l * G * np.exp(1j*l*np.arctan2(y,x))
         Ex, Ey = field(point, 'G', w0)
         Ex = Ex * E
