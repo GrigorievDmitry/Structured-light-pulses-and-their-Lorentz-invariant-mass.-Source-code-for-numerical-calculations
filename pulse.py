@@ -123,7 +123,7 @@ class pulse():
         eps = 0.
         for Eb in self.Ek_bound:
             eps += np.abs(Eb * self.spec_envelop)**2
-        eps = eps * self.kz/self.omega * pulse.c**2
+        eps = eps * np.real(self.kz)/self.omega * pulse.c**2
         px = eps * self.kx/self.omega * pulse.c
         py = eps * self.ky/self.omega * pulse.c
         pz = eps * self.kz/self.omega * pulse.c
@@ -136,8 +136,7 @@ class pulse():
         filt = fftshift(ifftn(filt))
         self.propagator = self.propagator * filt
     
-    def change_ref_frame(self, v, spec_envelop, *args):
-        beta = v/pulse.c
+    def change_ref_frame(self, beta, spec_envelop, *args):
         gamma = 1./np.sqrt(1 - beta**2)
         
         omega_1 = gamma * (self.omega - beta * pulse.c * self.kz)
@@ -148,7 +147,10 @@ class pulse():
         self.kz = self.kz.conjugate()
         
         omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
-        self.spec_envelop = spec_envelop(omega_1, *args)
+        omega_shape = omega_1.shape
+        omega_1 = omega_1.ravel()
+        self.spec_envelop = spec_envelop(omega_1, *args).reshape(omega_shape)
+        
         
         J = gamma * (1 + beta * pulse.c * self.omega/self.kz)
         self.Ek_bound[0] = gamma * J * (self.Ek_bound[0] + beta * self.Hk_bound[1])

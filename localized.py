@@ -80,8 +80,9 @@ def temporal_envelop_sin(t, k, tp, omega0):
     x = np.empty(t.shape[0], dtype=np.complex128)
     for i in range(t.shape[0]):
         if t[i] >= 0 and t[i] <= 2*k*tp:
-#            x[i] = -np.exp(1j*omega0*t[i])
-            x[i] = -1j*np.sin(omega0*t[i]/2)*np.exp(1j*omega0*t[i]/2)
+            x[i] = -1j*np.exp(1j*omega0*t[i])
+#            x[i] = -1j*np.sin(omega0*t[i]/2)*np.exp(1j*omega0*t[i]/2)
+#            x[i] = np.sin(omega0*t[i])
         else:
             x[i] = 0
     return x
@@ -138,7 +139,7 @@ scale_z = scale_factor * (lambda0*n_burst)
 points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
-enable_shift = True
+enable_shift = False
 f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
@@ -155,7 +156,6 @@ t1 = time.time()
 
 mu = []
 intensity = []
-velosity = []
 angle = []
 enrg1 = []
 enrg2 = []
@@ -168,6 +168,7 @@ loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
 loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 loc_pulse.center_spectral_range(omega0)
+#loc_pulse.make_spectral_range()
 loc_pulse.define_Ekz()
 loc_pulse.magnetic()
 
@@ -175,6 +176,7 @@ p4k = loc_pulse.momentum()
 energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
 energy0 = energy #g*micron**2/femtosec**2
 mass = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
+velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
 
 #y, z, x = np.meshgrid(l, l/k, l)
 for (j, z_point) in enumerate(z):
@@ -187,12 +189,10 @@ for (j, z_point) in enumerate(z):
 
 #    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
     intensity_t = W * loc_pulse.S_abs / energy0
-    velosity_t = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
     angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
     
 #    mu.append(mu_t * 10**(-13)) #[g]
     intensity.append(intensity_t * 10**(10))
-    velosity.append(velosity_t)
     angle.append(angle_t)
     
 #    enrg1.append(energy)
@@ -207,7 +207,6 @@ for (j, z_point) in enumerate(z):
         intensity = []
 #        mu = []
 
-velosity = np.array(velosity)
 #enrg1 = np.array(enrg1)
 #enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
 #enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
@@ -233,7 +232,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, 2*scale_t/points_t)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(loc_pulse.l_omega - omega0, np.abs(loc_pulse.spec_envelop.ravel()))
+plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
 
