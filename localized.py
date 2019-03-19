@@ -29,7 +29,7 @@ def field(point, name, w0, scalar=False):
         beta = 1./w0
         r = beta * np.sqrt(x**2 + y**2)
         E = jv(1, r)
-        Ex, Ey = field(point, 'G', w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -39,8 +39,8 @@ def field(point, name, w0, scalar=False):
         q = 0
         r = (np.sqrt(2*x**2 + 2*y**2)/w0)
         G = assoc_laguerre(r**2, l, q)
-        E = r**l * G * np.exp(1j*l*np.arctan2(y,x))
-        Ex, Ey = field(point, 'G', w0)
+        E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -49,7 +49,7 @@ def field(point, name, w0, scalar=False):
         l = 1
         m = 1
         E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
-        Ex, Ey = field(point, 'G', w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
