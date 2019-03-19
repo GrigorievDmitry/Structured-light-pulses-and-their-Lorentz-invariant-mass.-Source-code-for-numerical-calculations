@@ -129,14 +129,14 @@ def field_modulation(x, y):
 
 #================================PARAMETERS====================================
 #===FUNDAMENTAL PARAMETRS OF A PULSE================#
-lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
-c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
+lambda0 = 0.4 * 10**(-4) # microns# #10**(-4) cantimeters #
+c = 0.299792458 * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
 n_burst = 400
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
-W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
+W = 10**5# * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 beta = 1-3*10**(-6)
 #====CALCULATION AND PLOT SCALES ====================#
 
@@ -201,9 +201,9 @@ velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
 print(velosity)
 beta = velosity
 
-loc_pulse.transform_specter(beta, spectral_envelop, tp_full, omega0)
-loc_pulse.define_Ekz()
-loc_pulse.magnetic()
+#loc_pulse.transform_specter(beta, spectral_envelop_1, tp_full, omega0)
+#loc_pulse.define_Ekz()
+#loc_pulse.magnetic()
 loc_pulse.transform_fields(beta)
 
 
@@ -232,7 +232,7 @@ for (j, z_point) in enumerate(z):
     loc_pulse.inverse_ft()
 
 #    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
-    intensity_t = loc_pulse.S_abs
+    intensity_t = W * loc_pulse.S_abs / energy0
     angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
     
 #    mu.append(mu_t * 10**(-13)) #[g]
@@ -276,7 +276,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, loc_pulse.t.max()/loc_pulse.nt)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,50,50]))
+plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,0,0]))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
 

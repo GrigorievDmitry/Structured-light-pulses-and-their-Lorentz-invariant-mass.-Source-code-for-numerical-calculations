@@ -12,7 +12,7 @@ def save_result(result, name, delimiter, number=''):
 
 class pulse():
 
-    c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
+    c = 0.299792458 * 10**(11) #Speed of light [microns/femtoseconds]
     def __init__(self, boundary, x_range, y_range, real_type='abs', *args):
         self.x = x_range
         self.nx = len(x_range)
@@ -139,11 +139,11 @@ class pulse():
     def transform_fields(self, beta):
         gamma = 1./np.sqrt(1 - beta**2)
         
-        self.Ek_bound[0] = gamma * (self.Ek_bound[0] + beta * self.Hk_bound[1]) * self.J
-        self.Ek_bound[1] = gamma * (self.Ek_bound[1] - beta * self.Hk_bound[0]) * self.J
+        self.Ek_bound[0] = gamma * (self.Ek_bound[0] + beta * self.Hk_bound[1])# * self.J
+        self.Ek_bound[1] = gamma * (self.Ek_bound[1] - beta * self.Hk_bound[0])# * self.J
         
-        self.Hk_bound[0] = gamma * (self.Hk_bound[0] - beta * self.Ek_bound[1]) * self.J
-        self.Hk_bound[1] = gamma * (self.Hk_bound[1] + beta * self.Ek_bound[0]) * self.J
+        self.Hk_bound[0] = gamma * (self.Hk_bound[0] - beta * self.Ek_bound[1])# * self.J
+        self.Hk_bound[1] = gamma * (self.Hk_bound[1] + beta * self.Ek_bound[0])# * self.J
     
     def transform_specter(self, beta, spec_envelop, tp, omega0):
         gamma = 1./np.sqrt(1 - beta**2)
@@ -154,14 +154,14 @@ class pulse():
         self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
         self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
         self.kz = self.kz.conjugate()
-#        omega0_1 = gamma * (omega0 - beta * pulse.c * self.kz)
+        omega0_1 = gamma * (omega0 - beta * pulse.c * self.kz)
         
         omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
         kz_1 = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
         self.J = kz_1/self.kz
         omega_shape = omega_1.shape
         omega_1 = omega_1.ravel()
-        self.spec_envelop = spec_envelop(omega_1.ravel(), tp, omega0).reshape(omega_shape)
+        self.spec_envelop = spec_envelop(self.omega.ravel(), tp, omega0_1.ravel()).reshape(omega_shape)
         self.Ek_bound = self.Ek_bound[0:2]
     
     def normalize_fields(self, N):
