@@ -29,17 +29,18 @@ def field(point, name, w0, scalar=False):
         beta = 1./w0
         r = beta * np.sqrt(x**2 + y**2)
         E = jv(1, r)
-        Ex, Ey = field(point, 'G', w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
 
     if name == 'LG':
         l = 1
+        q = 0
         r = (np.sqrt(2*x**2 + 2*y**2)/w0)
-        G = assoc_laguerre(r**2, l)
-        E = r**l * G * np.exp(1j*l*np.arctan2(y,x))
-        Ex, Ey = field(point, 'G', w0)
+        G = assoc_laguerre(r**2, l, q)
+        E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -48,7 +49,7 @@ def field(point, name, w0, scalar=False):
         l = 1
         m = 1
         E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
-        Ex, Ey = field(point, 'G', w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -179,7 +180,7 @@ loc_pulse.magnetic()
 p4k = loc_pulse.momentum()
 energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
 energy0 = energy #g*micron**2/femtosec**2
-mass = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
+mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
 velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
 beta = velosity + 1.
 
