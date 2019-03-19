@@ -113,8 +113,7 @@ def field_modulation(x, y):
 n_burst_range = np.arange(3, 300, 2)
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
-f_types = ['G', 'BG', 'LG', 'HG']
-for f_type in f_types:
+for f_type in ['G', 'BG', 'LG', 'HG']:
     Mass = []
     Velosity = []
     for n_burst in n_burst_range:
@@ -187,10 +186,8 @@ for f_type in f_types:
     file = fold + delimiter + f_type + '_v_tp.npy'
     np.save(file, Velosity)
     
-    axes_m.plot((2*np.pi/omega0)*n_burst_range, Mass)
-    axes_v.plot((2*np.pi/omega0)*n_burst_range, Velosity)
-    axes_m.legend(f_types)
-    axes_v.legend(f_types)
+    axes_m.plot((2*np.pi/omega0)*n_burst_range, Mass, figure=fig_m)
+    axes_v.plot((2*np.pi/omega0)*n_burst_range, Velosity, figure=fig_v)
     
 #mu = []
 #intensity = []

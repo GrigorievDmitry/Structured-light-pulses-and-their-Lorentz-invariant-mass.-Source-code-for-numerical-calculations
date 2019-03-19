@@ -113,8 +113,7 @@ def field_modulation(x, y):
 w_range = np.linspace(3, 30, 100)
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
-f_types = ['G', 'BG', 'LG', 'HG']
-for f_type in f_types:
+for f_type in ['G', 'BG', 'LG', 'HG']:
     Mass = []
     Velosity = []
     for w in w_range:
@@ -189,9 +188,6 @@ for f_type in f_types:
     
     axes_m.plot(w_range, Mass)
     axes_v.plot(w_range, Velosity)
-    axes_m.legend(f_types)
-    axes_v.legend(f_types)
-    
 
 #mu = []
 #intensity = []
