@@ -181,7 +181,9 @@ np.save(file, Mass)
 file = fold + delimiter + f_type + '_v_l.npy'
 np.save(file, Velosity)
 
+plt.figure()
 plt.plot(l_range, Mass)
+plt.figure()
 plt.plot(l_range, Velosity)
 
 #mu = []

@@ -147,17 +147,17 @@ class pulse():
         self.kz = self.kz.conjugate()
         
         omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
+        kz_1 = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
+        self.J = kz_1/self.kz
         omega_shape = omega_1.shape
         omega_1 = omega_1.ravel()
         self.spec_envelop = spec_envelop(omega_1, *args).reshape(omega_shape)
         
+        self.Ek_bound[0] = gamma * self.J * (self.Ek_bound[0] + beta * self.Hk_bound[1])
+        self.Ek_bound[1] = gamma * self.J * (self.Ek_bound[1] - beta * self.Hk_bound[0])
         
-        J = gamma * (1 + beta * pulse.c * self.omega/self.kz)
-        self.Ek_bound[0] = gamma * J * (self.Ek_bound[0] + beta * self.Hk_bound[1])
-        self.Ek_bound[1] = gamma * J * (self.Ek_bound[1] - beta * self.Hk_bound[0])
-        
-        self.Hk_bound[0] = gamma * J * (self.Hk_bound[0] - beta * self.Ek_bound[1])
-        self.Hk_bound[1] = gamma * J * (self.Hk_bound[1] + beta * self.Ek_bound[0])
+        self.Hk_bound[0] = gamma * self.J * (self.Hk_bound[0] - beta * self.Ek_bound[1])
+        self.Hk_bound[1] = gamma * self.J * (self.Hk_bound[1] + beta * self.Ek_bound[0])
 
     @staticmethod
     def tripl_integrate(M, l):

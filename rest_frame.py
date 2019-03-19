@@ -118,10 +118,10 @@ def field_modulation(x, y):
 
 #================================PARAMETERS====================================
 #===FUNDAMENTAL PARAMETRS OF A PULSE================#
-lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
+lambda0 = 0.04# * 10**(-4) # microns# #10**(-4) cantimeters #
 c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
-n_burst = 400
+n_burst = 40000
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
@@ -172,7 +172,7 @@ loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
 #loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
 #loc_pulse.center_spectral_range(omega0)
-omega_range = np.linspace(0.99*omega0, 1.01*omega0, 100)
+omega_range = np.linspace(0.99*omega0, 1.01*omega0, 1000)
 loc_pulse.set_spec_envelop(spectral_envelop, omega_range, *(tp_full, omega0))
 loc_pulse.define_Ekz()
 loc_pulse.magnetic()
@@ -181,10 +181,22 @@ p4k = loc_pulse.momentum()
 energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
 energy0 = energy #g*micron**2/femtosec**2
 mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
-beta = velosity + 1.
+print(mass)
+velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2)
+print(velosity)
+beta = velosity
 
-#loc_pulse.change_ref_frame(beta, spectral_envelop, *(tp_full, omega0))
+loc_pulse.change_ref_frame(beta, spectral_envelop, *(tp_full, omega0))
+
+p4k = loc_pulse.momentum()
+energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
+gamma = 1./np.sqrt(1 - beta**2)
+energy = gamma * (energy - beta * pz)
+mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
+print(mass)
+velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2)
+print(velosity)
+
 ##1.3 SCALES OF Z - COORDINATE#
 #scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 #scale_z = scale_factor * (lambda0*n_burst) * 1./np.sqrt(1 - beta**2)
@@ -245,12 +257,12 @@ beta = velosity + 1.
 #np.save(file, 2*scale_t/points_t)
 #file = fold + delimiter + 'z_range.npy'
 #np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-#plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,0,0]))
+plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,0,0]))
 ## fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 #plt.show()
 #
 #np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
-print('Mass = %.6e [g]' %(mass))
+#print('Mass = %.6e [g]' %(mass))
 #
 #t2 = time.time()
 #print('Exec_time: %f' %(t2-t1))
