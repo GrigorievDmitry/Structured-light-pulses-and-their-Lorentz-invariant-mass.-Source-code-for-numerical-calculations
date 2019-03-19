@@ -123,10 +123,10 @@ class pulse():
         eps = 0.
         for Eb in self.Ek_bound:
             eps += np.abs(Eb * self.spec_envelop)**2
-        eps = eps * np.real(self.kz)/self.omega * pulse.c**2
-        px = eps * self.kx/self.omega * pulse.c
-        py = eps * self.ky/self.omega * pulse.c
-        pz = eps * self.kz/self.omega * pulse.c
+        eps = eps * np.real(self.kz)/self.omega
+        px = eps * self.kx/self.omega
+        py = eps * self.ky/self.omega
+        pz = eps * self.kz/self.omega
         if np.imag(eps).all() != 0 or np.imag(px).all() != 0 or np.imag(py).all() != 0 or np.imag(pz).all() != 0:
             raise ValueError('Complex energy!')
         return np.real(eps), np.real(px), np.real(py), np.real(pz)
