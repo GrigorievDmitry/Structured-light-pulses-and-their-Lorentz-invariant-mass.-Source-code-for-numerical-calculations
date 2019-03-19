@@ -155,16 +155,6 @@ batch_size = 100
 #================================EVALUATION====================================
 t1 = time.time()
 
-mu = []
-intensity = []
-angle = []
-enrg1 = []
-enrg2 = []
-
-
-saleh_teich_intensity = []
-
-
 loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
 loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
@@ -178,6 +168,13 @@ energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lk
 energy0 = energy #g*micron**2/femtosec**2
 mass = W * (1/2/np.pi/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
 velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
+
+mu = []
+intensity = []
+angle = []
+enrg1 = []
+enrg2 = []
+saleh_teich_intensity = []
 
 #y, z, x = np.meshgrid(l, l/k, l)
 for (j, z_point) in enumerate(z):
