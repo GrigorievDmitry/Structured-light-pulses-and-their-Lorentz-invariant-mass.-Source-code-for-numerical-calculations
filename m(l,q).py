@@ -29,16 +29,14 @@ def field(point, name, w0, l, q, scalar=False):
         beta = 1./w0
         r = beta * np.sqrt(x**2 + y**2)
         E = jv(1, r)
-        Ex, Ey = field(point, 'G', w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
 
     if name == 'LG':
-        l = 1
-        q = 0
-        r = (np.sqrt(2*x**2 + 2*y**2)/w0)
-        G = assoc_laguerre(r**2, l, q)
+        r = np.sqrt(x**2 + y**2)/w0
+        G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
         Ex, Ey = field(point, 'G', w0, l, q, scalar)
         Ex = Ex * E
@@ -49,7 +47,7 @@ def field(point, name, w0, l, q, scalar=False):
         l = 1
         m = 1
         E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
-        Ex, Ey = field(point, 'G', w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -177,6 +175,12 @@ for l in l_range:
     Mass.append(mass)
     Velosity.append(velosity)
 
+fold = os.getcwd() + delimiter + 'data'
+file = fold + delimiter + f_type + '_m_l.npy'
+np.save(file, Mass)
+file = fold + delimiter + f_type + '_v_l.npy'
+np.save(file, Velosity)
+
 plt.plot(l_range, Mass)
 plt.plot(l_range, Velosity)
 
@@ -231,22 +235,22 @@ plt.plot(l_range, Velosity)
 #plt.plot(enrg)
 #plt.plot(enrg1)
 
-fold = os.getcwd() + delimiter + 'data'
-
-np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
-file = fold + delimiter + 'space.npy'
-print(x.shape)
-np.save(file, x)
-file = fold + delimiter + 't_scale.npy'
-np.save(file, 2*scale_t/points_t)
-file = fold + delimiter + 'z_range.npy'
-np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
-# fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
-plt.show()
-
-np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
-print('Mass = %.6e [g]' %(mass))
-
-t2 = time.time()
-print('Exec_time: %f' %(t2-t1))
+#fold = os.getcwd() + delimiter + 'data'
+#
+#np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
+#file = fold + delimiter + 'space.npy'
+#print(x.shape)
+#np.save(file, x)
+#file = fold + delimiter + 't_scale.npy'
+#np.save(file, 2*scale_t/points_t)
+#file = fold + delimiter + 'z_range.npy'
+#np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
+#plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
+## fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
+#plt.show()
+#
+#np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
+#print('Mass = %.6e [g]' %(mass))
+#
+#t2 = time.time()
+#print('Exec_time: %f' %(t2-t1))

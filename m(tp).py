@@ -37,8 +37,8 @@ def field(point, name, w0, scalar=False):
     if name == 'LG':
         l = 1
         q = 0
-        r = (np.sqrt(2*x**2 + 2*y**2)/w0)
-        G = assoc_laguerre(r**2, l, q)
+        r = np.sqrt(x**2 + y**2)/w0
+        G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
         Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
@@ -111,6 +111,8 @@ def field_modulation(x, y):
 
 #================================PARAMETERS====================================
 n_burst_range = np.arange(3, 300, 2)
+fig_m = plt.figure()
+fig_v = plt.figure()
 for f_type in ['G', 'BG', 'LG', 'HG']:
     Mass = []
     Velosity = []
@@ -178,8 +180,14 @@ for f_type in ['G', 'BG', 'LG', 'HG']:
         Mass.append(mass)
         Velosity.append(velosity)
     
-    plt.plot((2*np.pi/omega0)*n_burst_range, Mass)
-    plt.plot((2*np.pi/omega0)*n_burst_range, Velosity)
+    fold = os.getcwd() + delimiter + 'data'
+    file = fold + delimiter + f_type + '_m_tp.npy'
+    np.save(file, Mass)
+    file = fold + delimiter + f_type + '_v_tp.npy'
+    np.save(file, Velosity)
+    
+    plt.plot((2*np.pi/omega0)*n_burst_range, Mass, figure=fig_m)
+    plt.plot((2*np.pi/omega0)*n_burst_range, Velosity, figure=fig_v)
     
 #mu = []
 #intensity = []
@@ -232,22 +240,22 @@ for f_type in ['G', 'BG', 'LG', 'HG']:
 #plt.plot(enrg)
 #plt.plot(enrg1)
 
-fold = os.getcwd() + delimiter + 'data'
-
-np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
-file = fold + delimiter + 'space.npy'
-print(x.shape)
-np.save(file, x)
-file = fold + delimiter + 't_scale.npy'
-np.save(file, 2*scale_t/points_t)
-file = fold + delimiter + 'z_range.npy'
-np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
-# fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
-plt.show()
-
-np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
-print('Mass = %.6e [g]' %(mass))
-
-t2 = time.time()
-print('Exec_time: %f' %(t2-t1))
+#fold = os.getcwd() + delimiter + 'data'
+#
+#np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
+#file = fold + delimiter + 'space.npy'
+#print(x.shape)
+#np.save(file, x)
+#file = fold + delimiter + 't_scale.npy'
+#np.save(file, 2*scale_t/points_t)
+#file = fold + delimiter + 'z_range.npy'
+#np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
+#plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
+## fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
+#plt.show()
+#
+#np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
+#print('Mass = %.6e [g]' %(mass))
+#
+#t2 = time.time()
+#print('Exec_time: %f' %(t2-t1))
