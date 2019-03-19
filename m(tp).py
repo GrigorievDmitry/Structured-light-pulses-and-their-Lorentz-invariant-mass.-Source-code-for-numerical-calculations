@@ -111,8 +111,8 @@ def field_modulation(x, y):
 
 #================================PARAMETERS====================================
 n_burst_range = np.arange(3, 300, 2)
-fig_m = plt.figure()
-fig_v = plt.figure()
+fig_m, axes_m = plt.subplots()
+fig_v, axes_v = plt.subplots()
 for f_type in ['G', 'BG', 'LG', 'HG']:
     Mass = []
     Velosity = []
@@ -175,7 +175,7 @@ for f_type in ['G', 'BG', 'LG', 'HG']:
         energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
         energy0 = energy #g*micron**2/femtosec**2
         mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-        velosity = (np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.) * 10**6
+        velosity = (1. - np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2)) * 10**6
         
         Mass.append(mass)
         Velosity.append(velosity)
@@ -186,8 +186,8 @@ for f_type in ['G', 'BG', 'LG', 'HG']:
     file = fold + delimiter + f_type + '_v_tp.npy'
     np.save(file, Velosity)
     
-    plt.plot((2*np.pi/omega0)*n_burst_range, Mass, figure=fig_m)
-    plt.plot((2*np.pi/omega0)*n_burst_range, Velosity, figure=fig_v)
+    axes_m.plot((2*np.pi/omega0)*n_burst_range, Mass, figure=fig_m)
+    axes_v.plot((2*np.pi/omega0)*n_burst_range, Velosity, figure=fig_v)
     
 #mu = []
 #intensity = []
