@@ -93,18 +93,7 @@ def spectral_envelop(omega, tp, omega0):
     for i in prange(omega.shape[0]):
         if np.real(omega[i]) > 0 and np.imag(omega[i]) == 0.:
 #            x[i] = 1/2 * tp * np.exp(-1j*omega[i]*tp/2) * (np.sinc(omega[i]*tp/2/np.pi) - np.exp(1j*omega0*tp/2) * np.sinc((omega[i]-omega0)*tp/2/np.pi))
-            x[i] = np.sinc((omega[i] - omega0)*tp/np.pi)
-        else:
-            x[i] = 0
-    return x
-
-@njit(nogil=True, parallel=True)
-def spectral_envelop_1(omega, tp, omega0):
-    x = np.empty(omega.shape[0], dtype=np.complex128)
-    for i in prange(omega.shape[0]):
-        if np.real(omega[i]) > 0 and np.imag(omega[i]) == 0. and np.imag(omega0[i]) == 0.:
-#            x[i] = 1/2 * tp * np.exp(-1j*omega[i]*tp/2) * (np.sinc(omega[i]*tp/2/np.pi) - np.exp(1j*omega0*tp/2) * np.sinc((omega[i]-omega0)*tp/2/np.pi))
-            x[i] = np.sinc((omega[i] - omega0[i])*tp/np.pi)
+            x[i] = -1j * np.sinc((omega[i] - omega0)*tp/2/np.pi) * np.exp(1j*(omega[i] - omega0)*tp/2)
         else:
             x[i] = 0
     return x
@@ -137,7 +126,6 @@ tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
 W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
-beta = 1-3*10**(-6)
 #====CALCULATION AND PLOT SCALES ====================#
 
 #1 . FOR Boundary CONDITIONS#
@@ -161,7 +149,6 @@ paraxial = False #Use of paraxial approximation
 scalar = True #Evaluate scalar field
 
 delimiter = '\\'
-batch_size = 100
 #==============================================================================
 
 
@@ -199,13 +186,14 @@ velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
 print(velosity)
 beta = velosity
 
-loc_pulse.transform_fields(beta)
+#loc_pulse.transform_fields(beta)
 
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)# * 1./np.sqrt(1 - beta**2)
-points_z = scale_factor * 20
+points_z = scale_factor * 10
 z = np.linspace(0, scale_z, points_z)
+batch_size = 50
 
 #y, z, x = np.meshgrid(l, l/k, l)
 for (j, z_point) in enumerate(z):
@@ -261,7 +249,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, loc_pulse.t.max()/loc_pulse.nt)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,50,50]))
+plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,0,0]))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()
 
