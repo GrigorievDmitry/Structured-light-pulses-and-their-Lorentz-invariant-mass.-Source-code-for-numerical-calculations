@@ -137,16 +137,67 @@ class pulse():
         self.propagator = self.propagator * filt
     
     def transform_fields(self, beta):
-        gamma = 1./np.sqrt(1 - beta**2)
+        self.beta = beta
+        self.gamma = 1./np.sqrt(1 - self.beta**2)
         
-        Ekx_temp = gamma * (self.Ek_bound[0] + beta * self.Hk_bound[1])
-        Eky_temp = gamma * (self.Ek_bound[1] - beta * self.Hk_bound[0])
+        Ekx_temp = self.gamma * (self.Ek_bound[0] + self.beta * self.Hk_bound[1])
+        Eky_temp = self.gamma * (self.Ek_bound[1] - self.beta * self.Hk_bound[0])
         
-        self.Hk_bound[0] = gamma * (self.Hk_bound[0] - beta * self.Ek_bound[1])
-        self.Hk_bound[1] = gamma * (self.Hk_bound[1] + beta * self.Ek_bound[0])
+        self.Hk_bound[0] = self.gamma * (self.Hk_bound[0] - self.beta * self.Ek_bound[1])
+        self.Hk_bound[1] = self.gamma * (self.Hk_bound[1] + self.beta * self.Ek_bound[0])
         
         self.Ek_bound[0] = Ekx_temp
         self.Ek_bound[1] = Eky_temp
+    
+    def t_factor(self, t):
+        factor = np.exp(1j * self.gamma * 2 * self.l_omega * t)
+        return factor.reshape(self.nt, 1, 1)
+    
+    def transformed_ift(self, T):
+        self.E = []
+        for F in self.Ek:
+            if self.spectral_shift:
+                F = ifftshift(F)
+            else:
+                F = ifftshift(F, axes=(1,2))
+            E = fftn(F, axes=(1,2))
+            Et = []
+            for t in T:
+                factor = self.t_factor(t)
+                Et.append(factor * E)
+            Et = np.array(Et)
+            E = spint.simps(Et, self.l_omega, axis=1)
+            self.E.append(E)
+        self.E_sq = 0.
+        for F in self.E: self.E_sq += (pulse.real(F, self.r_type))**2
+        self.H = []
+        try:
+            for F in self.Hk:
+                if self.spectral_shift:
+                    F = ifftshift(F)
+                else:
+                    F = ifftshift(F, axes=(1,2))
+                E = fftn(F, axes=(1,2))
+                Et = []
+                for t in T:
+                    factor = self.t_factor(t)
+                    Et.append(factor * E)
+                Et = np.array(Et)
+                E = spint.simps(Et, self.l_omega, axis=1)
+                self.H.append(E)
+            self.H_sq = 0.
+            for F in self.H: self.H_sq += (pulse.real(F, self.r_type))**2
+            self.EH = 0.
+            for i in range(3): self.EH += pulse.real(self.E[i], self.r_type) * pulse.real(self.H[i], self.r_type)
+        except AttributeError:
+            pass
+        self.E_real = [pulse.real(Eb, self.r_type) for Eb in self.E]
+        self.H_real = [pulse.real(Hb, self.r_type) for Hb in self.H]
+        self.S = [self.E_real[1]*self.H_real[2] - self.E_real[2]*self.H_real[1], self.E_real[2]*self.H_real[0] - self.E_real[0]*self.H_real[2], self.E_real[0]*self.H_real[1] - self.E_real[1]*self.H_real[0]]
+        self.S_abs = pulse.c/4/np.pi*np.sqrt(self.S[0]**2 + self.S[1]**2 + self.S[2]**2)
+    
+    def make_transformed_propagator(self, z):
+        self.propagator = np.exp(-1j*self.gamma*z * (self.kz - self.beta*self.omega/pulse.c))
     
     def normalize_fields(self, N):
         for i in range(3):
@@ -162,22 +213,4 @@ class pulse():
         if r_type == 'abs':
             return np.real(F)
         elif r_type == 'osc':
-            return np.real(1./2. * (F + F.conjugate()))
-        
-#    def transform_specter(self, beta, spec_envelop, tp, omega0):
-#        gamma = 1./np.sqrt(1 - beta**2)
-#        
-#        omega_1 = gamma * (self.omega - beta * pulse.c * self.kz)
-#        self.l_omega = np.linspace(np.real(omega_1).min(), np.real(omega_1).max(), self.nt)
-#        self.t = 2*np.pi*np.linspace(0, self.nt/(self.l_omega[-1] - self.l_omega[0]), self.nt)
-#        self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
-#        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
-#        self.kz = self.kz.conjugate()
-#        
-#        omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
-#        kz_1 = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
-#        self.J = kz_1/self.kz
-#        omega_shape = omega_1.shape
-#        omega_1 = omega_1.ravel()
-#        self.spec_envelop = spec_envelop(omega_1.ravel(), tp, omega0).reshape(omega_shape)
-#        self.Ek_bound = self.Ek_bound[0:2]
+            return np.real(1./2. * (F + F.conjugate()))        

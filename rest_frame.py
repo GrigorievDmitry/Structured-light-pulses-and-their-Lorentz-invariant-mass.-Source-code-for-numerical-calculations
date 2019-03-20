@@ -123,23 +123,23 @@ c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
 n_burst = 400
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
-w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
+w0 = 100 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
 W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 #====CALCULATION AND PLOT SCALES ====================#
 
 #1 . FOR Boundary CONDITIONS#
 #1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
-scale_x = 10*w0
-scale_y = 10*w0
-points_x = 100
-points_y = 100
+scale_x = 50*w0
+scale_y = 50*w0
+points_x = 50
+points_y = 50
 x = np.linspace(-scale_x, scale_x, points_x)
 y = np.linspace(-scale_y, scale_y, points_y)
 #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
 tp_max = (1/2)*tp_full
 scale_t = 10*tp_full
-points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+points_t = 20 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
 t = np.linspace(0, 2*scale_t, points_t)
 
 enable_shift = False
@@ -185,48 +185,37 @@ print(mass)
 velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
 print(velosity)
 beta = velosity
+gamma = 1./np.sqrt(1. - beta**2)
 
-#loc_pulse.transform_fields(beta)
+loc_pulse.transform_fields(beta)
 
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)# * 1./np.sqrt(1 - beta**2)
-points_z = scale_factor * 10
-z = np.linspace(0, scale_z, points_z)
-batch_size = 50
+points_z = scale_factor * 20
+z = np.linspace(-2*gamma*c*tp_full, gamma*scale_z, points_z)
+batch_size = 100
+T = np.linspace(0, 2*gamma*scale_t, points_t)
 
-#y, z, x = np.meshgrid(l, l/k, l)
 for (j, z_point) in enumerate(z):
     print(j)
-#        I = saleh_teich(x, y, z, tau)
-#        saleh_teich_intensity.append(I)
-    loc_pulse.make_t_propagator(z_point, paraxial)
-    loc_pulse.propagate()
-    loc_pulse.inverse_ft()
 
-#    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
+    loc_pulse.make_transformed_propagator(z_point)
+    loc_pulse.propagate()
+#    loc_pulse.inverse_ft()
+    
+    loc_pulse.transformed_ift(T)
+
     intensity_t = loc_pulse.S_abs
     angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
     
-#    mu.append(mu_t * 10**(-13)) #[g]
     intensity.append(intensity_t * 10**(10))
     angle.append(angle_t)
     
-#    enrg1.append(energy)
-#    enrg2.append(loc_pulse.E_sq + loc_pulse.H_sq)
-    
-    
     if (j+1)%batch_size == 0:
         intensity = np.array(intensity)
-#        mu = np.array(mu)
         save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
-#        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
         intensity = []
-#        mu = []
-
-#enrg1 = np.array(enrg1)
-#enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
-#enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
 #==============================================================================
 
 

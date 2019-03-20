@@ -176,7 +176,7 @@ for f_type in f_types:
         energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
         energy0 = energy #g*micron**2/femtosec**2
         mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-        velosity = (1. - np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2)) * 10**6
+        velosity = (1. - np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2)) * 10**3
         
         Mass.append(mass)
         Velosity.append(velosity)
