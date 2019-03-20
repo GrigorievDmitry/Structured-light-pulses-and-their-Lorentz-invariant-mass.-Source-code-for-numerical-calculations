@@ -98,6 +98,17 @@ def spectral_envelop(omega, tp, omega0):
             x[i] = 0
     return x
 
+@njit(nogil=True, parallel=True)
+def spectral_envelop_1(omega, tp, omega0):
+    x = np.empty(omega.shape[0], dtype=np.complex128)
+    for i in prange(omega.shape[0]):
+        if np.real(omega[i]) > 0 and np.imag(omega[i]) == 0. and np.imag(omega0[i]) == 0.:
+#            x[i] = 1/2 * tp * np.exp(-1j*omega[i]*tp/2) * (np.sinc(omega[i]*tp/2/np.pi) - np.exp(1j*omega0*tp/2) * np.sinc((omega[i]-omega0)*tp/2/np.pi))
+            x[i] = np.sinc((omega[i] - omega0[i])*tp/np.pi)
+        else:
+            x[i] = 0
+    return x
+
 #Boundary additional modulation
 def field_modulation(x, y):
     return 1.
@@ -118,14 +129,14 @@ def field_modulation(x, y):
 
 #================================PARAMETERS====================================
 #===FUNDAMENTAL PARAMETRS OF A PULSE================#
-lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
-c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
+lambda0 = 0.4 * 10**(-4) # microns# #10**(-4) cantimeters #
+c = 0.299792458 * 10**(11) #Speed of light [microns/femtoseconds]
 omega0 =  2*np.pi*c/lambda0 #(10**15 seconds^(-1)#
 n_burst = 400
 tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
 w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
 k = 1
-W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
+W = 10**5# * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
 beta = 1-3*10**(-6)
 #====CALCULATION AND PLOT SCALES ====================#
 
@@ -179,50 +190,70 @@ loc_pulse.magnetic()
 
 p4k = loc_pulse.momentum()
 energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
-energy0 = energy #g*micron**2/femtosec**2
-mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-velosity = np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2) - 1.
-beta = velosity + 1.
+N = W/energy #g*micron**2/femtosec**2
+loc_pulse.normalize_fields(N)
 
-#loc_pulse.change_ref_frame(beta, spectral_envelop, *(tp_full, omega0))
-##1.3 SCALES OF Z - COORDINATE#
-#scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
-#scale_z = scale_factor * (lambda0*n_burst) * 1./np.sqrt(1 - beta**2)
-#points_z = scale_factor * 20
-#z = np.linspace(0, scale_z, points_z)
-#
-##y, z, x = np.meshgrid(l, l/k, l)
-#for (j, z_point) in enumerate(z):
-#    print(j)
-##        I = saleh_teich(x, y, z, tau)
-##        saleh_teich_intensity.append(I)
-#    loc_pulse.make_t_propagator(z_point, paraxial)
-#    loc_pulse.propagate()
-#    loc_pulse.inverse_ft()
-#
-##    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
-#    intensity_t = W * loc_pulse.S_abs / energy0
-#    angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
-#    
-##    mu.append(mu_t * 10**(-13)) #[g]
-#    intensity.append(intensity_t * 10**(10))
-#    angle.append(angle_t)
-#    
-##    enrg1.append(energy)
-##    enrg2.append(loc_pulse.E_sq + loc_pulse.H_sq)
-#    
-#    
-#    if (j+1)%batch_size == 0:
-#        intensity = np.array(intensity)
-##        mu = np.array(mu)
-#        save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
-##        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
-#        intensity = []
-##        mu = []
-#
-##enrg1 = np.array(enrg1)
-##enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
-##enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
+p4k = loc_pulse.momentum()
+energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
+mass = (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2))
+print(mass)
+velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
+print(velosity)
+beta = velosity
+
+#loc_pulse.transform_specter(beta, spectral_envelop_1, tp_full, omega0)
+#loc_pulse.define_Ekz()
+#loc_pulse.magnetic()
+loc_pulse.transform_fields(beta)
+
+
+p4k = loc_pulse.momentum()
+energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
+gamma = 1./np.sqrt(1 - beta**2)
+energy = gamma * (energy - beta * pz)
+mass = (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2))
+print(mass)
+velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
+print(velosity)
+
+#1.3 SCALES OF Z - COORDINATE#
+scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
+scale_z = scale_factor * (lambda0*n_burst)# * 1./np.sqrt(1 - beta**2)
+points_z = scale_factor * 20
+z = np.linspace(0, scale_z, points_z)
+
+#y, z, x = np.meshgrid(l, l/k, l)
+for (j, z_point) in enumerate(z):
+    print(j)
+#        I = saleh_teich(x, y, z, tau)
+#        saleh_teich_intensity.append(I)
+    loc_pulse.make_t_propagator(z_point, paraxial)
+    loc_pulse.propagate()
+    loc_pulse.inverse_ft()
+
+#    mu_t = W * (1/4/np.pi/c**2) * np.sqrt((loc_pulse.E_sq - loc_pulse.H_sq)**2/4 + loc_pulse.EH**2) / energy0
+    intensity_t = W * loc_pulse.S_abs / energy0
+    angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
+    
+#    mu.append(mu_t * 10**(-13)) #[g]
+    intensity.append(intensity_t * 10**(10))
+    angle.append(angle_t)
+    
+#    enrg1.append(energy)
+#    enrg2.append(loc_pulse.E_sq + loc_pulse.H_sq)
+    
+    
+    if (j+1)%batch_size == 0:
+        intensity = np.array(intensity)
+#        mu = np.array(mu)
+        save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
+#        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
+        intensity = []
+#        mu = []
+
+#enrg1 = np.array(enrg1)
+#enrg2 = np.transpose(np.array(enrg2), (1,0,2,3))/8/np.pi
+#enrg = [pulse.tripl_integrate(enrg2[i], (x, y, z)) for i in range(len(t))]
 #==============================================================================
 
 
@@ -235,22 +266,22 @@ beta = velosity + 1.
 #plt.plot(enrg)
 #plt.plot(enrg1)
 
-#fold = os.getcwd() + delimiter + 'data'
-#
-#np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
-#file = fold + delimiter + 'space.npy'
-#print(x.shape)
-#np.save(file, x)
-#file = fold + delimiter + 't_scale.npy'
-#np.save(file, 2*scale_t/points_t)
-#file = fold + delimiter + 'z_range.npy'
-#np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
-#plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,0,0]))
-## fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
-#plt.show()
-#
-#np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
+fold = os.getcwd() + delimiter + 'data'
+
+np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
+file = fold + delimiter + 'space.npy'
+print(x.shape)
+np.save(file, x)
+file = fold + delimiter + 't_scale.npy'
+np.save(file, loc_pulse.t.max()/loc_pulse.nt)
+file = fold + delimiter + 'z_range.npy'
+np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
+plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop[:,0,0]))
+# fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
+plt.show()
+
+np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
 print('Mass = %.6e [g]' %(mass))
-#
-#t2 = time.time()
-#print('Exec_time: %f' %(t2-t1))
+
+t2 = time.time()
+print('Exec_time: %f' %(t2-t1))
