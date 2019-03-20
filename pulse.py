@@ -123,7 +123,7 @@ class pulse():
         eps = 0.
         for Eb in self.Ek_bound:
             eps += np.abs(Eb * self.spec_envelop)**2
-        eps = eps * np.real(self.kz)/self.omega
+        eps = eps * np.real(self.kz)/self.omega * pulse.c**2
         px = eps * self.kx/self.omega
         py = eps * self.ky/self.omega
         pz = eps * self.kz/self.omega
@@ -139,30 +139,14 @@ class pulse():
     def transform_fields(self, beta):
         gamma = 1./np.sqrt(1 - beta**2)
         
-        self.Ek_bound[0] = gamma * (self.Ek_bound[0] + beta * self.Hk_bound[1]) * self.J
-        self.Ek_bound[1] = gamma * (self.Ek_bound[1] - beta * self.Hk_bound[0]) * self.J
+        Ekx_temp = gamma * (self.Ek_bound[0] + beta * self.Hk_bound[1])
+        Eky_temp = gamma * (self.Ek_bound[1] - beta * self.Hk_bound[0])
         
-        self.Hk_bound[0] = gamma * (self.Hk_bound[0] - beta * self.Ek_bound[1]) * self.J
-        self.Hk_bound[1] = gamma * (self.Hk_bound[1] + beta * self.Ek_bound[0]) * self.J
-    
-    def transform_specter(self, beta, spec_envelop, tp, omega0):
-        gamma = 1./np.sqrt(1 - beta**2)
+        self.Hk_bound[0] = gamma * (self.Hk_bound[0] - beta * self.Ek_bound[1])
+        self.Hk_bound[1] = gamma * (self.Hk_bound[1] + beta * self.Ek_bound[0])
         
-        omega_1 = gamma * (self.omega - beta * pulse.c * self.kz)
-        self.l_omega = np.linspace(np.real(omega_1).min(), np.real(omega_1).max(), self.nt)
-        self.t = 2*np.pi*np.linspace(0, self.nt/(self.l_omega[-1] - self.l_omega[0]), self.nt)
-        self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
-        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
-        self.kz = self.kz.conjugate()
-#        omega0_1 = gamma * (omega0 - beta * pulse.c * self.kz)
-        
-        omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
-        kz_1 = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
-        self.J = kz_1/self.kz
-        omega_shape = omega_1.shape
-        omega_1 = omega_1.ravel()
-        self.spec_envelop = spec_envelop(omega_1.ravel(), tp, omega0).reshape(omega_shape)
-        self.Ek_bound = self.Ek_bound[0:2]
+        self.Ek_bound[0] = Ekx_temp
+        self.Ek_bound[1] = Eky_temp
     
     def normalize_fields(self, N):
         for i in range(3):
@@ -179,3 +163,21 @@ class pulse():
             return np.real(F)
         elif r_type == 'osc':
             return np.real(1./2. * (F + F.conjugate()))
+        
+#    def transform_specter(self, beta, spec_envelop, tp, omega0):
+#        gamma = 1./np.sqrt(1 - beta**2)
+#        
+#        omega_1 = gamma * (self.omega - beta * pulse.c * self.kz)
+#        self.l_omega = np.linspace(np.real(omega_1).min(), np.real(omega_1).max(), self.nt)
+#        self.t = 2*np.pi*np.linspace(0, self.nt/(self.l_omega[-1] - self.l_omega[0]), self.nt)
+#        self.ky, self.omega, self.kx = np.meshgrid(self.lky, self.l_omega, self.lkx)
+#        self.kz = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128) + 10**(-200)
+#        self.kz = self.kz.conjugate()
+#        
+#        omega_1 = gamma * (self.omega + beta * pulse.c * self.kz)
+#        kz_1 = np.sqrt(self.omega**2/pulse.c**2 - self.ky**2 - self.kx**2, dtype=np.complex128)
+#        self.J = kz_1/self.kz
+#        omega_shape = omega_1.shape
+#        omega_1 = omega_1.ravel()
+#        self.spec_envelop = spec_envelop(omega_1.ravel(), tp, omega0).reshape(omega_shape)
+#        self.Ek_bound = self.Ek_bound[0:2]

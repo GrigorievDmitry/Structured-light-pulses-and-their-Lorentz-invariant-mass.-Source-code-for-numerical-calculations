@@ -181,8 +181,6 @@ saleh_teich_intensity = []
 
 loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
 loc_pulse.spatial_bound_ft()
-#loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
-#loc_pulse.center_spectral_range(omega0)
 omega_range = np.linspace(0.99*omega0, 1.01*omega0, 100)
 loc_pulse.set_spec_envelop(spectral_envelop, omega_range, *(tp_full, omega0))
 loc_pulse.define_Ekz()
@@ -201,20 +199,7 @@ velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
 print(velosity)
 beta = velosity
 
-loc_pulse.transform_specter(beta, spectral_envelop, tp_full, omega0)
-loc_pulse.define_Ekz()
-loc_pulse.magnetic()
 loc_pulse.transform_fields(beta)
-
-
-p4k = loc_pulse.momentum()
-energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
-gamma = 1./np.sqrt(1 - beta**2)
-energy = gamma * (energy - beta * pz)
-mass = (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2))
-print(mass)
-velosity = np.sqrt(1 - (mass**2 * c**4)/energy**2)
-print(velosity)
 
 #1.3 SCALES OF Z - COORDINATE#
 scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
