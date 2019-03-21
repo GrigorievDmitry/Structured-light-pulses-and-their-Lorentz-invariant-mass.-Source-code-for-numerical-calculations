@@ -3,7 +3,7 @@ This code provides numerical simulation of localized light pulses with arbitrary
 
 The following manual describes functions, modules, and objects included.
 # Module 'pulse'.
-This module contains function `save_result(result, name, delimiter, number='')`, that saves data during calculation and the main class `pulse`.
+This module contains function `save_result`, that saves data during calculation and the main class `pulse`.
 
 Class `pulse`:
 ```python
