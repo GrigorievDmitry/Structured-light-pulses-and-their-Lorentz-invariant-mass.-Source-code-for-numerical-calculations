@@ -119,7 +119,7 @@ def field_modulation(x, y):
 
 
 #================================PARAMETERS====================================
-n_burst_range = np.arange(3, 300, 4)
+n_burst_range = np.arange(7, 300, 4)
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
 f_types = ['G', 'BG', 'LG', 'HG', 'AG']

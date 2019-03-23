@@ -37,8 +37,8 @@ def field(point, name, w0, scalar=False):
     if name == 'LG':
         l = 1
         q = 0
-        r = (np.sqrt(2*x**2 + 2*y**2)/w0)
-        G = assoc_laguerre(r**2, l, q)
+        r = np.sqrt(x**2 + y**2)/w0
+        G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
         Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
@@ -54,8 +54,17 @@ def field(point, name, w0, scalar=False):
         Ey = Ey * E
         return Ex, Ey
     
-    if name == 'A':
+    if name == 'AG':
         E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
+        alpha = np.arctan2(y,x)
+        Ex = - E * np.sin(alpha)
+        Ey = E * np.cos(alpha)
+        Ex = Ex * E
+        Ey = Ey * E
+        return Ex, Ey
+    
+    if name == 'AG_x':
+        E = airy(x/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
         alpha = np.arctan2(y,x)
         Ex = - E * np.sin(alpha)
         Ey = E * np.cos(alpha)
@@ -140,17 +149,17 @@ x = np.linspace(-scale_x, scale_x, points_x)
 y = np.linspace(-scale_y, scale_y, points_y)
 #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
 tp_max = (1/2)*tp_full
-scale_t = 3*tp_full
-points_t = 50 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+scale_t = 10*tp_full
+points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
 t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
-scale_factor = 2 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
+scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 50
+points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
-f_type = 'AG' #Pulse type ('G', 'BG', 'LG', 'HG')
+f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
 scalar = True #Evaluate scalar field
@@ -209,7 +218,7 @@ for (j, z_point) in enumerate(z):
     if (j+1)%batch_size == 0:
         intensity = np.array(intensity)
 #        mu = np.array(mu)
-        save_result(intensity, 'intensity', delimiter, number=(j+1)//batch_size)
+        save_result(intensity, 'intensity', delimiter, f_type, number=(j+1)//batch_size)
 #        save_result(mu, 'mu', delimiter, number=(j+1)//batch_size)
         intensity = []
 #        mu = []
@@ -229,7 +238,9 @@ for (j, z_point) in enumerate(z):
 #plt.plot(enrg)
 #plt.plot(enrg1)
 
-fold = os.getcwd() + delimiter + 'data'
+fold = os.getcwd() + delimiter + 'data' + delimiter + f_type
+if not os.path.exists(fold):
+        os.makedirs(fold)
 
 np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
 file = fold + delimiter + 'space.npy'
