@@ -150,7 +150,7 @@ for q in q_range:
         f_type = 'HG' #Pulse type ('G', 'BG', 'LG', 'HG')
         r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
         paraxial = False #Use of paraxial approximation
-        scalar = True #Evaluate scalar field
+        scalar = False #Evaluate scalar field
         
         delimiter = '\\'
         batch_size = 100

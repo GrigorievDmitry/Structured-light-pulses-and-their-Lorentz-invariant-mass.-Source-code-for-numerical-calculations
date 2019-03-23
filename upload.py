@@ -1,6 +1,7 @@
 import numpy as np
 import field_plotter as fp
 import os
+import matplotlib.pyplot as plt
 #================================PARAMETERS====================================
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 delimiter = '\\'
@@ -28,5 +29,8 @@ print(intensity.shape)
 
 fps = 0.1
 print(x.shape)
-fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter)
+figures = fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter)
+for (i, fig) in enumerate(figures):
+    filename = fold + delimiter + 'intensity' + f'_{i}.png'
+    fig.savefig(filename)
 fp.anim('intensity', fold, fps, delimiter)

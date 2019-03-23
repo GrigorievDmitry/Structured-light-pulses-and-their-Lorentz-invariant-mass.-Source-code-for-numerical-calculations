@@ -114,6 +114,7 @@ w_range = np.linspace(3, 30, 100)
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
 f_types = ['G', 'BG', 'LG', 'HG']
+Scalar = {'G':True, 'BG':False, 'LG':False, 'HG':False}
 for f_type in f_types:
     Mass = []
     Velosity = []
@@ -153,7 +154,7 @@ for f_type in f_types:
         #f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
         r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
         paraxial = False #Use of paraxial approximation
-        scalar = True #Evaluate scalar field
+        scalar = Scalar[f_type] #Evaluate scalar field
         
         delimiter = '\\'
         batch_size = 100
