@@ -4,7 +4,7 @@ import os
 #================================PARAMETERS====================================
 folder_suffix = '' #Data will be writen in the new foler with given suffix
 delimiter = '\\'
-f_type = 'G'
+f_type = 'LG'
 
 path = os.getcwd() + delimiter + 'data' + delimiter + f_type + delimiter
 
@@ -27,7 +27,7 @@ print(intensity.shape)
 fps = 0.1
 print(x.shape)
 figures = fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter)
-#for (i, fig) in enumerate(figures):
-#    filename = fold + delimiter + 'intensity' + f'_{i}.png'
-#    fig.savefig(filename)
-#fp.anim('intensity', fold, fps, delimiter)
+for (i, fig) in enumerate(figures):
+    filename = fold + delimiter + 'intensity' + f'_{i}.png'
+    fig.savefig(filename)
+fp.anim('intensity', fold, fps, delimiter)

@@ -10,13 +10,16 @@ def plot2d2(M1, M2, limits1, limits2, t, v=(None, None)):
     im = ax1.imshow(M1, interpolation='lanczos', cmap=cm.RdBu,
                    origin='lower', extent=limits1,
                    vmax=M_max, vmin=M_min)
-    fig.colorbar(im, ax=ax1, shrink=0.9)
+    cbar = fig.colorbar(im, ax=ax1, shrink=0.9)
+    cbar.set_label('Intensity [mW/m^2]')
     preset(ax1, 'x [mcm]', 'y [mcm]', '%.2f' %t + ' fs')
     im = ax2.imshow(M2, interpolation='lanczos', cmap=cm.RdBu,
                    origin='lower', extent=limits2,
                    vmax=M_max, vmin=M_min)
-    fig.colorbar(im, ax=ax2, shrink=0.9)
+    cbar = fig.colorbar(im, ax=ax2, shrink=0.9)
+    cbar.set_label('Intensity [mW/m^2]')
     preset(ax2, 'x [mcm]', 'z [mcm]', '%.2f' %t + ' fs')
+    fig.suptitle('Laguerre-Gaussian type of pulse\n\n Parameters: wavelength - 404 nm; waist - 4 mcm; time duration - 0.534 ps; full energy - 10 mJ; order - l=1, q=1', fontsize=14)
     return fig
 #    plt.show()
 

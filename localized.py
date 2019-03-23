@@ -36,7 +36,7 @@ def field(point, name, w0, scalar=False):
 
     if name == 'LG':
         l = 1
-        q = 0
+        q = 1
         r = np.sqrt(x**2 + y**2)/w0
         G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
@@ -159,10 +159,10 @@ points_z = scale_factor * 20
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
-f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
+f_type = 'LG' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
-scalar = True #Evaluate scalar field
+scalar = False #Evaluate scalar field
 
 delimiter = '\\'
 batch_size = 100
