@@ -54,7 +54,7 @@ def field(point, name, w0, scalar=False):
         Ey = Ey * E
         return Ex, Ey
     
-    if name == 'A':
+    if name == 'AG':
         E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
         alpha = np.arctan2(y,x)
         Ex = - E * np.sin(alpha)
@@ -119,11 +119,12 @@ def field_modulation(x, y):
 
 
 #================================PARAMETERS====================================
-n_burst_range = np.arange(3, 300, 2)
+n_burst_range = np.arange(3, 300, 4)
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
-f_types = ['G', 'BG', 'LG', 'HG']
-Scalar = {'G':True, 'BG':False, 'LG':False, 'HG':False}
+f_types = ['G', 'BG', 'LG', 'HG', 'AG']
+Scalar = {'G':True, 'BG':False, 'LG':False, 'HG':False, 'AG':True}
+linestyles = {'G':'-', 'BG':'--', 'LG':':', 'HG':'-.', 'AG':'-'}
 for f_type in f_types:
     Mass = []
     Velosity = []
@@ -184,9 +185,13 @@ for f_type in f_types:
         
         p4k = loc_pulse.momentum()
         energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
-        energy0 = energy #g*micron**2/femtosec**2
-        mass = W * (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2)) / energy0
-        velosity = (1. - np.sqrt(1 - (mass**2 * c**4) * energy0**2/energy**2/W**2)) * 10**6
+        N = W/energy #g*micron**2/femtosec**2
+        loc_pulse.normalize_fields(N)
+        
+        p4k = loc_pulse.momentum()
+        energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
+        mass = (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2))
+        velosity = (1. - np.sqrt(1 - (mass**2 * c**4)/energy**2)) * 10**3
         
         Mass.append(mass)
         Velosity.append(velosity)
@@ -197,8 +202,12 @@ for f_type in f_types:
     file = fold + delimiter + f_type + '_v_tp.npy'
     np.save(file, Velosity)
     
-    axes_m.plot((2*np.pi/omega0)*n_burst_range, Mass)
-    axes_v.plot((2*np.pi/omega0)*n_burst_range, Velosity)
+    if f_type is not 'AG':
+        axes_m.plot((2*np.pi/omega0)*n_burst_range, Mass, linestyle=linestyles[f_type], color='black')
+        axes_v.plot((2*np.pi/omega0)*n_burst_range, Velosity, linestyle=linestyles[f_type], color='black')
+    else:
+        axes_m.plot((2*np.pi/omega0)*n_burst_range, Mass, marker='.', color='black')
+        axes_v.plot((2*np.pi/omega0)*n_burst_range, Velosity, marker='.', color='black')
     axes_m.legend(f_types)
     axes_v.legend(f_types)
     

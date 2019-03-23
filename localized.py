@@ -150,10 +150,10 @@ points_z = scale_factor * 50
 z = np.linspace(0, scale_z, points_z)
 
 enable_shift = True
-f_type = 'A' #Pulse type ('G', 'BG', 'LG', 'HG')
+f_type = 'AG' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
-scalar = False #Evaluate scalar field
+scalar = True #Evaluate scalar field
 
 delimiter = '\\'
 batch_size = 100

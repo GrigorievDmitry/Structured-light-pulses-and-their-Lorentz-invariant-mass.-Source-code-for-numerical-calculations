@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import jv, assoc_laguerre, eval_hermite, erf
+from scipy.special import jv, assoc_laguerre, eval_hermite, erf, airy
 import time
 import os
 from numba import njit, prange
@@ -9,7 +9,7 @@ from pulse import pulse, save_result
 #============================MODELING_FUNCTIONS================================
 
 #Defines field boundary conditions
-def field(point, name, w0, l, q, scalar=False):
+def field(point, name, w0, scalar=False):
 
     x = point[0]
     y = point[1]
@@ -35,17 +35,30 @@ def field(point, name, w0, l, q, scalar=False):
         return Ex, Ey
 
     if name == 'LG':
+        l = 1
+        q = 0
         r = np.sqrt(x**2 + y**2)/w0
         G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
-        Ex, Ey = field(point, 'G', w0, l, q, scalar)
+        Ex, Ey = field(point, 'G', w0, scalar)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
 
     if name == 'HG':
-        E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(q, np.sqrt(2)*y/w0)
-        Ex, Ey = field(point, 'G', w0, l, q, scalar)
+        l = 1
+        m = 1
+        E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
+        Ex, Ey = field(point, 'G', w0, scalar)
+        Ex = Ex * E
+        Ey = Ey * E
+        return Ex, Ey
+    
+    if name == 'AG':
+        E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
+        alpha = np.arctan2(y,x)
+        Ex = - E * np.sin(alpha)
+        Ey = E * np.cos(alpha)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -106,16 +119,17 @@ def field_modulation(x, y):
 
 
 #================================PARAMETERS====================================
-q_range = np.arange(4)
-l_range = np.arange(1, 30, 1)
+W_range = np.linspace(1, 30, 50)/2
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
-linestyles = ['-', '--', ':', '-.']
-for q in q_range:
+f_types = ['G', 'BG', 'LG', 'HG', 'AG']
+Scalar = {'G':True, 'BG':False, 'LG':False, 'HG':False, 'AG':True}
+linestyles = {'G':'-', 'BG':'--', 'LG':':', 'HG':'-.', 'AG':'-'}
+for f_type in f_types:
     Mass = []
     Velosity = []
-    for l in l_range:
-        print(l)
+    for W_1 in W_range:
+        print(W_1)
         #===FUNDAMENTAL PARAMETRS OF A PULSE================#
         lambda0 = 0.4# * 10**(-4) # microns# #10**(-4) cantimeters #
         c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
@@ -124,7 +138,7 @@ for q in q_range:
         tp_full = (2*np.pi/omega0)*n_burst #(femtoseconds)#  (#10**(-15) seconds#)
         w0 = 10 * lambda0 #(microns)# (#10**(-4) cantimeters#)
         k = 1
-        W = 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
+        W = W_1 * 10**5 * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
         #====CALCULATION AND PLOT SCALES ====================#
         
         #1 . FOR Boundary CONDITIONS#
@@ -147,10 +161,10 @@ for q in q_range:
         z = np.linspace(0, scale_z, points_z)
         
         enable_shift = False
-        f_type = 'HG' #Pulse type ('G', 'BG', 'LG', 'HG')
+        #f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
         r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
         paraxial = False #Use of paraxial approximation
-        scalar = False #Evaluate scalar field
+        scalar = Scalar[f_type] #Evaluate scalar field
         
         delimiter = '\\'
         batch_size = 100
@@ -161,7 +175,7 @@ for q in q_range:
         #================================EVALUATION====================================
         t1 = time.time()
         
-        loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, l, q, scalar))
+        loc_pulse = pulse(field, x, y, r_type, *(f_type, w0, scalar))
         loc_pulse.spatial_bound_ft()
         loc_pulse.temporal_bound_ft(temporal_envelop_sin, t, enable_shift, *(k, tp_max, omega0))
         loc_pulse.center_spectral_range(omega0)
@@ -178,15 +192,25 @@ for q in q_range:
         energy, px, py, pz = [pulse.tripl_integrate(p4k[i], (loc_pulse.lkx, loc_pulse.lky, loc_pulse.l_omega)) for i in range(4)]
         mass = (1/c**2) * np.sqrt(energy**2 - c**2*(px**2 + py**2 + pz**2))
         velosity = (1. - np.sqrt(1 - (mass**2 * c**4)/energy**2)) * 10**3
+        
+        Mass.append(mass)
+        Velosity.append(velosity)
     
-#    fold = os.getcwd() + delimiter + 'data'
-#    file = fold + delimiter + f_type + '_m_l.npy'
-#    np.save(file, Mass)
-#    file = fold + delimiter + f_type + '_v_l.npy'
-#    np.save(file, Velosity)
+    fold = os.getcwd() + delimiter + 'data'
+    file = fold + delimiter + f_type + '_m_w0.npy'
+    np.save(file, Mass)
+    file = fold + delimiter + f_type + '_v_w0.npy'
+    np.save(file, Velosity)
     
-    axes_m.plot(l_range, Mass, linestyle=linestyles[q], color='black')
-    axes_v.plot(l_range, Velosity, linestyle=linestyles[q], color='black')
+    if f_type is not 'AG':
+        axes_m.plot(W_range, Mass, linestyle=linestyles[f_type], color='black')
+        axes_v.plot(W_range, Velosity, linestyle=linestyles[f_type], color='black')
+    else:
+        axes_m.plot(W_range, Mass, marker='.', color='black')
+        axes_v.plot(W_range, Velosity, marker='.', color='black')
+    axes_m.legend(f_types)
+    axes_v.legend(f_types)
+    
 
 #mu = []
 #intensity = []
