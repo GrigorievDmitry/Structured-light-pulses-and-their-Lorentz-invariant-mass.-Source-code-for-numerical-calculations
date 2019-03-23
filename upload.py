@@ -1,7 +1,6 @@
 import numpy as np
 import field_plotter as fp
 import os
-import matplotlib.pyplot as plt
 #================================PARAMETERS====================================
 folder_suffix = 'pure' #Data will be writen in the new foler with given suffix
 delimiter = '\\'

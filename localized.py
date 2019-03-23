@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import jv, assoc_laguerre, eval_hermite, erf
+from scipy.special import jv, assoc_laguerre, eval_hermite, erf, airy
 import time
 import os
 from numba import njit, prange
@@ -50,6 +50,15 @@ def field(point, name, w0, scalar=False):
         m = 1
         E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
         Ex, Ey = field(point, 'G', w0, scalar)
+        Ex = Ex * E
+        Ey = Ey * E
+        return Ex, Ey
+    
+    if name == 'A':
+        E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
+        alpha = np.arctan2(y,x)
+        Ex = - E * np.sin(alpha)
+        Ey = E * np.cos(alpha)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -131,17 +140,17 @@ x = np.linspace(-scale_x, scale_x, points_x)
 y = np.linspace(-scale_y, scale_y, points_y)
 #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
 tp_max = (1/2)*tp_full
-scale_t = 10*tp_full
-points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+scale_t = 3*tp_full
+points_t = 50 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
 t = np.linspace(0, 2*scale_t, points_t)
 #1.3 SCALES OF Z - COORDINATE#
-scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
+scale_factor = 2 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
 scale_z = scale_factor * (lambda0*n_burst)
-points_z = scale_factor * 20
+points_z = scale_factor * 50
 z = np.linspace(0, scale_z, points_z)
 
-enable_shift = False
-f_type = 'BG' #Pulse type ('G', 'BG', 'LG', 'HG')
+enable_shift = True
+f_type = 'A' #Pulse type ('G', 'BG', 'LG', 'HG')
 r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
 paraxial = False #Use of paraxial approximation
 scalar = False #Evaluate scalar field
@@ -230,6 +239,7 @@ file = fold + delimiter + 't_scale.npy'
 np.save(file, 2*scale_t/points_t)
 file = fold + delimiter + 'z_range.npy'
 np.save(file, np.array([0, scale_z/points_z * (batch_size - 1)]))
+
 plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
 # fp.plot2d(np.abs(loc_pulse.Ek_bound[1]), loc_pulse.lk)
 plt.show()

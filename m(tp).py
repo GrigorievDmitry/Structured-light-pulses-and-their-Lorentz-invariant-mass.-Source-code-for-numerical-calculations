@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import jv, assoc_laguerre, eval_hermite, erf
+from scipy.special import jv, assoc_laguerre, eval_hermite, erf, airy
 import time
 import os
 from numba import njit, prange
@@ -50,6 +50,15 @@ def field(point, name, w0, scalar=False):
         m = 1
         E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
         Ex, Ey = field(point, 'G', w0, scalar)
+        Ex = Ex * E
+        Ey = Ey * E
+        return Ex, Ey
+    
+    if name == 'A':
+        E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
+        alpha = np.arctan2(y,x)
+        Ex = - E * np.sin(alpha)
+        Ey = E * np.cos(alpha)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
@@ -114,6 +123,7 @@ n_burst_range = np.arange(3, 300, 2)
 fig_m, axes_m = plt.subplots()
 fig_v, axes_v = plt.subplots()
 f_types = ['G', 'BG', 'LG', 'HG']
+Scalar = {'G':True, 'BG':False, 'LG':False, 'HG':False}
 for f_type in f_types:
     Mass = []
     Velosity = []
@@ -153,7 +163,7 @@ for f_type in f_types:
         #f_type = 'G' #Pulse type ('G', 'BG', 'LG', 'HG')
         r_type = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
         paraxial = False #Use of paraxial approximation
-        scalar = True #Evaluate scalar field
+        scalar = Scalar[f_type] #Evaluate scalar field
         
         delimiter = '\\'
         batch_size = 100

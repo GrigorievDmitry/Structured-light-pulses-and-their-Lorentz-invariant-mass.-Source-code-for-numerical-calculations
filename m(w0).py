@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import jv, assoc_laguerre, eval_hermite, erf
+from scipy.special import jv, assoc_laguerre, eval_hermite, erf, airy
 import time
 import os
 from numba import njit, prange
@@ -50,6 +50,15 @@ def field(point, name, w0, scalar=False):
         m = 1
         E = eval_hermite(l, np.sqrt(2)*x/w0) * eval_hermite(m, np.sqrt(2)*y/w0)
         Ex, Ey = field(point, 'G', w0, scalar)
+        Ex = Ex * E
+        Ey = Ey * E
+        return Ex, Ey
+    
+    if name == 'A':
+        E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
+        alpha = np.arctan2(y,x)
+        Ex = - E * np.sin(alpha)
+        Ey = E * np.cos(alpha)
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
