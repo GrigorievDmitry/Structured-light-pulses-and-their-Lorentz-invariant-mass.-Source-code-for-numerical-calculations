@@ -3,13 +3,6 @@ import scipy.integrate as spint
 from scipy.fftpack import fftn, ifftn, fftshift, ifftshift, ifft, fft
 import os
 
-def save_result(result, name, delimiter, f_type, number=''):
-    path = os.getcwd() + delimiter + 'data' + delimiter + f_type
-    if not os.path.exists(path):
-        os.makedirs(path)
-    f_name = delimiter + name + str(number) + '.npy'
-    np.save(path + f_name, result)
-
 class pulse():
 
     c = 0.299792458# * 10**(11) #Speed of light [microns/femtoseconds]
@@ -214,3 +207,49 @@ class pulse():
             return np.real(F)
         elif r_type == 'osc':
             return np.real(1./2. * (F + F.conjugate()))        
+
+class parameter_container():
+    
+    def __init__(self, lambda0, n_burst, w0, W):
+        self.lambda0 = lambda0# * 10**(-4) # microns# #10**(-4) cantimeters #
+        self.omega0 =  2*np.pi*pulse.c/self.lambda0 #(10**15 seconds^(-1)#
+        self.n_burst = n_burst
+        self.w0 = w0 * self.lambda0 #(microns)# (#10**(-4) cantimeters#)
+        self.W = W * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
+        #====CALCULATION AND PLOT SCALES ====================#
+        
+        #1 . FOR Boundary CONDITIONS#
+        #1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
+        
+        scale_x = 10*w0
+        scale_y = 10*w0
+        points_x = 100
+        points_y = 100
+        self.x = np.linspace(-scale_x, scale_x, points_x)
+        self.y = np.linspace(-scale_y, scale_y, points_y)
+        #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
+        tp_full = (2*np.pi/self.omega0)*self.n_burst #(femtoseconds)#  (#10**(-15) seconds#)
+        scale_t = 10*tp_full
+        points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+        self.t = np.linspace(0, 2*scale_t, points_t)
+        #1.3 SCALES OF Z - COORDINATE#
+        scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
+        scale_z = scale_factor * (self.lambda0 * self.n_burst)
+        points_z = scale_factor * 20
+        self.z = np.linspace(0, scale_z, points_z)
+        self.batch_size = 100
+
+#def parse_config(name='\\main.txt'):
+#    file = os.getcwd() + name
+#    pars = {}
+#    with open(file, 'r') as f:
+#        pars[scale_x] = 
+#        pars[scale_y] = 
+#        pars[points_x] = 
+#        pars[points_y] = 
+#        pars[scale_t] = 
+#        pars[points_t] = 
+#        pars[scale_factor] = 
+#        pars[points_z] = 
+#        pars[batch_size] = 
+#    return pars
