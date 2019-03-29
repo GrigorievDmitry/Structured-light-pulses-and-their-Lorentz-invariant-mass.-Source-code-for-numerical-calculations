@@ -1,5 +1,5 @@
 # Light pulses calculation code.
-This code provides numerical simulation of localized light pulses with arbitrary spatial and temporal envelops. Calculations are based on the approach, considered in [reference]. The work is supported by the Russian Foundation for Basic Research under Grant No. 18-32-00906.
+This code provides numerical simulation of localized light pulses with arbitrary spatial and temporal envelops. Calculations are based on the approach, considered in [arXiv:1903.10338]. The work is supported by the Russian Foundation for Basic Research under Grant No. 18-32-00906.
 
 The following manual describes functions, modules, and objects included.
 # Module 'pulse'.
