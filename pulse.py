@@ -210,46 +210,47 @@ class pulse():
 
 class parameter_container():
     
-    def __init__(self, lambda0, n_burst, w0, W):
-        self.lambda0 = lambda0# * 10**(-4) # microns# #10**(-4) cantimeters #
+    def __init__(self, lambda0, n_burst, w0, W, delimiter):
+        self.lambda0 = lambda0
         self.omega0 =  2*np.pi*pulse.c/self.lambda0 #(10**15 seconds^(-1)#
         self.n_burst = n_burst
         self.w0 = w0 * self.lambda0 #(microns)# (#10**(-4) cantimeters#)
         self.W = W * 10**(2*4 - 2*15) #erg -> g*micron**2/femtosec**2
+        
+        pars = parse_config(delimiter)
         #====CALCULATION AND PLOT SCALES ====================#
         
         #1 . FOR Boundary CONDITIONS#
         #1.1 INITIAL SCALES FOR SPATIAL BOUNDARY CONDITIONS #
-        
-        scale_x = 10*w0
-        scale_y = 10*w0
-        points_x = 100
-        points_y = 100
+        scale_x = pars['scale_x'] * self.w0
+        scale_y = pars['scale_y'] * self.w0
+        points_x = pars['points_x']
+        points_y = pars['points_y']
         self.x = np.linspace(-scale_x, scale_x, points_x)
         self.y = np.linspace(-scale_y, scale_y, points_y)
         #1.2 INITIAL SCALES FOR TEMPORAL BOUNDARY CONDITIONS #
-        tp_full = (2*np.pi/self.omega0)*self.n_burst #(femtoseconds)#  (#10**(-15) seconds#)
-        scale_t = 10*tp_full
-        points_t = 100 #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
+        self.tp_full = (2*np.pi/self.omega0) * self.n_burst #(femtoseconds)#  (#10**(-15) seconds#)
+        self.tp_max = self.tp_full/2.
+        scale_t = pars['scale_t'] * self.tp_full
+        points_t = pars['points_t'] #Number of points is choosen in accordance with spectrum detalization(quality requirements#)
         self.t = np.linspace(0, 2*scale_t, points_t)
         #1.3 SCALES OF Z - COORDINATE#
-        scale_factor = 5 #NUMBER OF PULSE LENGTH IN Z COORDINATE#
+        scale_factor = pars['scale_factor'] #NUMBER OF PULSE LENGTH IN Z COORDINATE#
         scale_z = scale_factor * (self.lambda0 * self.n_burst)
-        points_z = scale_factor * 20
+        points_z = pars['points_z']
         self.z = np.linspace(0, scale_z, points_z)
-        self.batch_size = 100
+        self.batch_size = pars['batch_size']
+        
+    def get_parameters_list(self):
+        print('lambda0 omega0 n_burst w0 W \nx y z t tp_full tp_max batch_size')
 
-#def parse_config(name='\\main.txt'):
-#    file = os.getcwd() + name
-#    pars = {}
-#    with open(file, 'r') as f:
-#        pars[scale_x] = 
-#        pars[scale_y] = 
-#        pars[points_x] = 
-#        pars[points_y] = 
-#        pars[scale_t] = 
-#        pars[points_t] = 
-#        pars[scale_factor] = 
-#        pars[points_z] = 
-#        pars[batch_size] = 
-#    return pars
+def parse_config(delimiter, name='config.txt'):
+    file = os.getcwd() + delimiter + name
+    par_names = ('scale_x', 'scale_y', 'points_x', 'points_y', 'scale_t', 'points_t', \
+                 'scale_factor', 'points_z', 'batch_size')
+    pars = {}
+    with open(file, 'r') as f:
+        for (i, line) in enumerate(f):
+            val = line.split('=')[1].strip()
+            pars[par_names[i]] = int(val)
+    return pars
