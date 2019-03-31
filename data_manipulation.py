@@ -11,7 +11,7 @@ def save_result(result, name, delimiter, f_type, number=''):
 def save_environment(x, t, z, mass, delimiter, f_type):
     fold = os.getcwd() + delimiter + 'data' + delimiter + f_type
     if not os.path.exists(fold):
-            os.makedirs(fold)
+        os.makedirs(fold)
     
     np.savetxt(fold + delimiter + 'type.txt', [f_type], '%s')
     file = fold + delimiter + 'space.npy'
