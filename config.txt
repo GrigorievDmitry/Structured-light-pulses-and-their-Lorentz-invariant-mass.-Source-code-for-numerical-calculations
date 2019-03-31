@@ -1,0 +1,9 @@
+scale_x = 10
+scale_y = 10
+points_x = 100
+points_y = 100
+scale_t = 10
+points_t = 100
+scale_factor = 5
+points_z = 100
+batch_size = 100
