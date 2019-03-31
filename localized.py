@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 from pulse import parameter_container
 from data_manipulation import save_result, save_environment
-from main_calculation_part import field_core
+from main_calculation_part import field_core, make_preset
 
 #================================PARAMETERS====================================
 #===FUNDAMENTAL PARAMETRS OF A PULSE================#
@@ -12,13 +12,7 @@ w0 = 10 #[lambda0]
 n_burst = 400
 W = 10**5 #erg
 
-presets = {}
-presets['enable_shift'] = True
-presets['f_type'] = 'LG' #Pulse type ('G', 'BG', 'LG', 'HG')
-presets['r_type'] = 'abs' #'abs' for sqrt(E*E.conj); 'osc' for 1/2*(F+F.conj)
-presets['paraxial'] = False #Use of paraxial approximation
-presets['scalar'] = False #Evaluate scalar field
-
+presets = make_preset('LG', False)
 delimiter = '\\'
 pars = parameter_container(lambda0, n_burst, w0, W, delimiter)
 #==============================================================================

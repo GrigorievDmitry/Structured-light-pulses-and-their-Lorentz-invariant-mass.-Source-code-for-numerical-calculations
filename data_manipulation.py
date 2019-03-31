@@ -21,3 +21,10 @@ def save_environment(x, t, z, mass, delimiter, f_type):
     file = fold + delimiter + 'z_range.npy'
     np.save(file, np.array([0, z]))
     np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
+
+def save_mass_calc(mass, velosity, f_type, delimiter, ctype):
+    fold = os.getcwd() + delimiter + 'data'
+    file = fold + delimiter + f_type + '_m_' + ctype + '.npy'
+    np.save(file, mass)
+    file = fold + delimiter + f_type + '_v_' + ctype + '.npy'
+    np.save(file, velosity)
