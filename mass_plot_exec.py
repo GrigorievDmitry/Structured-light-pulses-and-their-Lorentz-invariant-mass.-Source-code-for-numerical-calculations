@@ -1,11 +1,11 @@
 import numpy as np
 from main_calculation_part import compute_mass
 
-delimiter = '\\'
+delimiter = '/'
 var_id = 'w0'
 
 if var_id == 'w0':
-    var = np.linspace(3, 30, 50)
+    var = np.linspace(3, 30, 100)
 elif var_id == 'n_burst':
     var = np.arange(7, 300, 4)
 elif var_id == 'W':

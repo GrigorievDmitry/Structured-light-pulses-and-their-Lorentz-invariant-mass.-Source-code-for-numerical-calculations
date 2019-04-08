@@ -47,7 +47,7 @@ def field(point, name, w0, scalar=False):
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
-    
+
     if name == 'AG':
         E = airy(x/w0)[0] * airy(y/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
         alpha = np.arctan2(y,x)
@@ -56,7 +56,7 @@ def field(point, name, w0, scalar=False):
         Ex = Ex * E
         Ey = Ey * E
         return Ex, Ey
-    
+
     if name == 'AG_x':
         E = airy(x/w0)[0] * np.exp(-(x/w0 + y/w0)**2/2)
         alpha = np.arctan2(y,x)
@@ -88,6 +88,9 @@ def temporal_envelop(t, k, tp, omega0):
         else:
             x[i] = 0
     return x
+
+def temporal_gauss(t, tp, omega0):
+    return np.exp(-t**2/2/tp**2) * np.exp(-1j*omega0*t)
 
 def temporal_envelop_sin(t, k, tp, omega0):
     x = np.empty(t.shape[0], dtype=np.complex128)

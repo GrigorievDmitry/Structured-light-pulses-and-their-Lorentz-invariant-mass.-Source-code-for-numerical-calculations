@@ -13,7 +13,7 @@ n_burst = 400
 W = 10**5 #erg
 
 presets = make_preset('LG', False)
-delimiter = '\\'
+delimiter = '/'
 pars = parameter_container(lambda0, n_burst, w0, W, delimiter)
 #==============================================================================
 
@@ -36,11 +36,11 @@ for (j, z_point) in enumerate(pars.z):
 
     intensity_t = loc_pulse.S_abs
     angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
-    
+
     intensity.append(intensity_t * 10**(10))
     angle.append(angle_t)
-    
-    
+
+
     if (j+1)%pars.batch_size == 0:
         intensity = np.array(intensity)
         save_result(intensity, 'intensity', delimiter, presets['f_type'], number=(j+1)//pars.batch_size)
