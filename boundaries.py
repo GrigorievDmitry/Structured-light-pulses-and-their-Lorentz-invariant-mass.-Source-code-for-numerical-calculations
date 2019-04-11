@@ -30,7 +30,7 @@ def field(point, name, w0, scalar=False):
 
     if name == 'LG':
         l = 1
-        q = 1
+        q = 0
         r = np.sqrt(x**2 + y**2)/w0
         G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
@@ -93,9 +93,9 @@ def temporal_envelop_sin(t, k, tp, omega0):
     x = np.empty(t.shape[0], dtype=np.complex128)
     for i in range(t.shape[0]):
         if t[i] >= 0 and t[i] <= 2*k*tp:
-            x[i] = -1j*np.exp(1j*omega0*t[i])
+#            x[i] = -1j*np.exp(1j*omega0*t[i])
 #            x[i] = -1j*np.sin(omega0*t[i]/2)*np.exp(1j*omega0*t[i]/2)
-#            x[i] = np.sin(omega0*t[i])
+            x[i] = np.sin(omega0*t[i])
         else:
             x[i] = 0
     return x
