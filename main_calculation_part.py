@@ -1,5 +1,6 @@
 import numpy as np
 from pulse import pulse
+from pulse_gpu import pulse_gpu
 import boundaries as bnd
 import matplotlib.pyplot as plt
 import time
@@ -7,7 +8,7 @@ from pulse import parameter_container
 from data_manipulation import save_mass_calc as smc
 
 def field_core(pars, presets):
-    loc_pulse = pulse(bnd.field, pars.x, pars.y, presets['r_type'], *(presets['f_type'], pars.w0, presets['scalar']))
+    loc_pulse = pulse_gpu(bnd.field, pars.x, pars.y, presets['r_type'], *(presets['f_type'], pars.w0, presets['scalar']))
     loc_pulse.spatial_bound_ft()
     loc_pulse.temporal_bound_ft(bnd.temporal_envelop_sin, pars.t, presets['enable_shift'], *(1., pars.tp_max, pars.omega0))
     loc_pulse.center_spectral_range(pars.omega0)

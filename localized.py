@@ -28,6 +28,7 @@ intensity = []
 angle = []
 
 for (j, z_point) in enumerate(pars.z):
+    t1 = time.time()
     print(j)
 
     loc_pulse.make_t_propagator(z_point, presets['paraxial'])
@@ -35,11 +36,12 @@ for (j, z_point) in enumerate(pars.z):
     loc_pulse.inverse_ft()
 
     intensity_t = loc_pulse.S_abs
-    angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
+#    angle_t = 180/np.pi * np.arccos(loc_pulse.EH / np.sqrt(loc_pulse.E_sq * loc_pulse.H_sq))
     
     intensity.append(intensity_t * 10**(10))
-    angle.append(angle_t)
-    
+#    angle.append(angle_t)
+    t2 = time.time()
+    print('Exec_time: %f' %(t2-t1))
     
     if (j+1)%pars.batch_size == 0:
         intensity = np.array(intensity)
@@ -58,6 +60,3 @@ print(pars.x.shape)
 plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
 plt.show()
 print('Mass = %.6e [g]' %(mass))
-
-t2 = time.time()
-print('Exec_time: %f' %(t2-t1))

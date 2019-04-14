@@ -29,12 +29,12 @@ class pulse():
             self.spec_envelop = fftshift(self.spec_envelop)
             self.freq_shift = -1
 
-    def make_spectral_range(self):
+    def make_spectral_range(self, enable_shift=False):
         self.l_omega = 2*np.pi*np.linspace(self.freq_shift*self.nt/2/(self.t[-1] - self.t[0]), \
                         (2+self.freq_shift)*self.nt/2/(self.t[-1] - self.t[0]), self.nt)
 
     def center_spectral_range(self, omega0):
-        self.make_spectral_range()
+        self.make_spectral_range(self.spectral_shift)
         while self.l_omega.max() < omega0 or self.l_omega.min() > omega0:
             if self.l_omega.max() < omega0:
                 self.freq_shift += 2
