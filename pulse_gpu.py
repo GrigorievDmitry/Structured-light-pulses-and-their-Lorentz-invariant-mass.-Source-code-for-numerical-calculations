@@ -3,7 +3,7 @@ import pycuda.gpuarray as gpuarray
 import numpy as np
 import skcuda.fft as cufft
 from pulse import pulse
-from scipy.fftpack import fftshift
+from scipy.fftpack import fftshift, ifft
 
 class pulse_gpu(pulse):
 
@@ -12,13 +12,11 @@ class pulse_gpu(pulse):
         self.lky = fftshift(2*np.pi*np.linspace(-self.ny/2/(self.y[-1] - self.y[0]), self.ny/2/(self.y[-1] - self.y[0]), self.ny))
         self.Ek_bound = []
         self.plan2 = cufft.Plan((self.ny, self.nx), np.complex128, np.complex128)
-        E_host = np.empty((self.ny, self.nx), dtype=np.complex128)
         for Eb in self.E_bound:
             E_gpu = gpuarray.to_gpu(Eb)
             cufft.ifft(E_gpu, E_gpu, self.plan2)
-            E_gpu.get(E_host)
+            E_host = E_gpu.get()
             self.Ek_bound.append(E_host)
-        self.plan2 = cufft.Plan((1, self.ny, self.nx), np.complex128, np.complex128)
             
     def make_spectral_range(self, enable_shift=False):
         self.l_omega = 2*np.pi*np.linspace(self.freq_shift*self.nt/2/(self.t[-1] - self.t[0]), \
@@ -38,16 +36,15 @@ class pulse_gpu(pulse):
         self.spec_envelop = np.empty(self.nt, dtype=np.complex128)
         spec_envelop_gpu.get(self.spec_envelop)
         self.spec_envelop = self.spec_envelop.reshape(self.nt, 1, 1)
-        self.plan1 = cufft.Plan((self.nt, 1, 1), np.complex128, np.complex128)
+        self.plan2 = cufft.Plan((self.ny, self.nx), np.complex128, np.complex128, batch=self.nt)
 
     def inverse_ft(self):
         self.E = []
-        F_host = np.empty((self.nt, self.ny, self.nx), dtype=np.complex128)
         for F in self.Ek:
             F_gpu = gpuarray.to_gpu(F)
             cufft.fft(F_gpu, F_gpu, self.plan2)
-            cufft.ifft(F_gpu, F_gpu, self.plan1)
-            F_gpu.get(F_host)
+            F_host = F_gpu.get()
+            F_host = ifft(F_host, axis=0)
             self.E.append(F_host)
         self.E_sq = 0.
         for F in self.E: self.E_sq += (pulse.real(F, self.r_type))**2
@@ -56,8 +53,8 @@ class pulse_gpu(pulse):
             for F in self.Hk:
                 F_gpu = gpuarray.to_gpu(F)
                 cufft.fft(F_gpu, F_gpu, self.plan2)
-                cufft.ifft(F_gpu, F_gpu, self.plan1)
-                F_gpu.get(F_host)
+                F_host = ifft(F_host, axis=0)
+                F_host = F_gpu.get()
                 self.H.append(F_host)
             self.H_sq = 0.
             for F in self.H: self.H_sq += (pulse.real(F, self.r_type))**2

@@ -24,6 +24,10 @@ t1 = time.time()
 
 loc_pulse, mass, velosity = field_core(pars, presets)
 
+print(pars.x.shape)
+plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
+plt.show()
+
 intensity = []
 angle = []
 
@@ -56,7 +60,4 @@ for (j, z_point) in enumerate(pars.z):
 save_environment(pars.x, pars.t[1] - pars.t[0], (pars.z[1] - pars.z[0])*(pars.batch_size - 1), \
                  mass, delimiter, presets['f_type'])
 
-print(pars.x.shape)
-plt.plot(loc_pulse.l_omega, np.abs(loc_pulse.spec_envelop.ravel()))
-plt.show()
 print('Mass = %.6e [g]' %(mass))
