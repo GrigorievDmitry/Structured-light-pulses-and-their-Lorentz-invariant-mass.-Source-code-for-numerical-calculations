@@ -1,6 +1,7 @@
 
 *.png
 pic\
+pic/
 data\
 data/
 __pycache__\

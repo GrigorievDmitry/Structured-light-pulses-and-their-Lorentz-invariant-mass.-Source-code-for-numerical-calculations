@@ -8,7 +8,7 @@ def save_result(result, name, delimiter, f_type, number=''):
     f_name = delimiter + name + str(number) + '.npy'
     np.save(path + f_name, result)
 
-def save_environment(x, t, z, mass, delimiter, f_type):
+def save_environment(x, t, z, mass, velosity, delimiter, f_type):
     fold = os.getcwd() + delimiter + 'data' + delimiter + f_type
     if not os.path.exists(fold):
         os.makedirs(fold)
@@ -21,6 +21,7 @@ def save_environment(x, t, z, mass, delimiter, f_type):
     file = fold + delimiter + 'z_range.npy'
     np.save(file, np.array([0, z]))
     np.savetxt(fold + delimiter + 'mass.txt', np.array([mass]), '%.3e')
+    np.savetxt(fold + delimiter + 'velosity.txt', np.array([velosity]), '%.3e')
 
 def save_mass_calc(mass, velosity, f_type, delimiter, ctype):
     fold = os.getcwd() + delimiter + 'data'
