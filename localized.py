@@ -58,6 +58,6 @@ for (j, z_point) in enumerate(pars.z):
 
 #===================================PLOTS======================================
 save_environment(pars.x, pars.t[1] - pars.t[0], (pars.z[1] - pars.z[0])*(pars.batch_size - 1), \
-                 mass, delimiter, presets['f_type'])
+                 mass, velosity, delimiter, presets['f_type'])
 
 print('Mass = %.6e [g]' %(mass))

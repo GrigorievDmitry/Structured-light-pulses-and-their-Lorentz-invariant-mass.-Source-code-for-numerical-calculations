@@ -30,7 +30,7 @@ def field(point, name, w0, scalar=False):
 
     if name == 'LG':
         l = 1
-        q = 0
+        q = 1
         r = np.sqrt(x**2 + y**2)/w0
         G = assoc_laguerre(2*r**2, l, q)
         E = r**l * G * np.exp(-1j*l*np.arctan2(y,x))
