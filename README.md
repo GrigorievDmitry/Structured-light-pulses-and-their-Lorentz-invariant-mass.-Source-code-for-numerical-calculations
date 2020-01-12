@@ -1,5 +1,5 @@
 # Light pulses calculation code.
-This code provides a numerical simulation of localized light pulses propagation with arbitrary spatial and temporal envelopes. We calculate Lorentz-invariant mass and mean propagation velocity of spatially localized light pulses in a vacuum. Calculation methods and research details are presented in the project paper: Stephen V Vintskevich and Dmitry A Grigoriev 2019 Laser Phys. 29 086001 https://doi.org/10.1088/1555-6611/ab1aa0. 
+This code provides a numerical simulation of localized light pulses propagation with arbitrary spatial and temporal envelopes. We calculate Lorentz-invariant mass and mean propagation velocity of spatially localized light pulses in a vacuum. Calculation methods and research details are presented in the project paper: Stephen V Vintskevich and Dmitry A Grigoriev "Structured light pulses and their Lorentz-invariant mass", Laser Phys. 29 086001 (2019) https://doi.org/10.1088/1555-6611/ab1aa0. 
 
 
 Both authors were equally contributed to the code development and project results. The work is supported by the Russian Foundation for Basic Research under Grant No. 18-32-00906
