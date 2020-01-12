@@ -4,8 +4,8 @@ This code provides numerical simulation of localized light pulses with arbitrary
 # Abstract
 The Lorentz-invariant mass and mean propagation speed have been found for structured light pulses in a vacuum considered as relativistic objects. We have solved the boundary problem for such widely known field configurations as Gauss, Laguerre–Gauss, Bessel–Gauss, Hermite–Gauss and Airy–Gauss. The pulses were taken as having a temporal envelope of finite duration. We discovered that Lorentz-invariant mass and mean propagation speed significantly depend on the spatial–temporal structure of pulses. We found that mean propagation speed is independent of the full energy of the pulse and is less than the speed of light.
 
-The following manual describes functions, modules, and objects included.
-# Module 'pulse'.
+# The following manual describes functions, modules, and objects included.
+## Module 'pulse'.
 This module contains function `save_result`, that saves data during calculation and the main class `pulse`.
 
 Class `pulse`:
