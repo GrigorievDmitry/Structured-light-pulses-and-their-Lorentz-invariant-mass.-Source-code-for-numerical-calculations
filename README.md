@@ -1,6 +1,9 @@
 # Light pulses calculation code.
 This code provides numerical simulation of localized light pulses with arbitrary spatial and temporal envelops. Calculations are based on the approach, considered in "Stephen V Vintskevich and Dmitry A Grigoriev 2019 Laser Phys. 29 086001" https://doi.org/10.1088/1555-6611/ab1aa0. Both authors equally contributed to the result. The work is supported by the Russian Foundation for Basic Research under Grant No. 18-32-00906.
 
+# Abstract
+The Lorentz-invariant mass and mean propagation speed have been found for structured light pulses in a vacuum considered as relativistic objects. We have solved the boundary problem for such widely known field configurations as Gauss, Laguerre–Gauss, Bessel–Gauss, Hermite–Gauss and Airy–Gauss. The pulses were taken as having a temporal envelope of finite duration. We discovered that Lorentz-invariant mass and mean propagation speed significantly depend on the spatial–temporal structure of pulses. We found that mean propagation speed is independent of the full energy of the pulse and is less than the speed of light.
+
 The following manual describes functions, modules, and objects included.
 # Module 'pulse'.
 This module contains function `save_result`, that saves data during calculation and the main class `pulse`.
