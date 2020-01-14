@@ -84,18 +84,41 @@ def set_default_inputs():
     default_inputs['W'] = 10**5 #erg
     return default_inputs
 
+
+@cuda.jit(device=True)
+def moveaxis_4(mtx, axis):
+    if axis == 0:
+        return (mtx[0,:,:,:], mtx[1,:,:,:], mtx[2,:,:,:])
+    elif axis == 1:
+        return (mtx[:,0,:,:], mtx[:,1,:,:], mtx[:,2,:,:])
+    elif axis == 2:
+        return (mtx[:,:,0,:], mtx[:,:,1,:], mtx[:,:,2,:])
+    else:
+        return (mtx[:,:,:,0], mtx[:,:,:,1], mtx[:,:,:,2])
+    
+@cuda.jit(device=True)
+def moveaxis_3(mtx, axis):
+    if axis == 0:
+        return (mtx[0,1,1], mtx[1,1,1], mtx[2,1,1])
+    elif axis == 1:
+        return (mtx[1,0,1], mtx[1,1,1], mtx[1,2,1])
+    else:
+        return (mtx[1,1,0], mtx[1,1,1], mtx[1,1,2])
+
+
 @cuda.jit
 def interpolate_kernel(field, points, steps, field_out):
-    n = cuda.blockIdx.x
-    k = cuda.threadIdx.x
+    n = cuda.grid(1)
     
     if n < len(points):
         point = points[n]
-        nearest_idx = cuda.shared.array(4, dtype=nb.int8)
+        nearest_idx = cuda.local.array(4, dtype=nb.int8)
+        grads = cuda.local.array((3, 3, 3), dtype=nb.float64)
+        hess = cuda.local.array((4, 4), dtype=nb.float64)
+        offset = cuda.local.array(4, dtype=nb.float64)
         
-        
-        (int(point[0]/steps[0]), int(point[1]/steps[1]), int(point[2]/steps[2]),    int(point[3]/steps[3])
-        )
+        for i in range(4):
+            nearest_idx[i] = int(point[i]/steps[i])
         
         calc_grid = field[
                     nearest_idx[0]-1:nearest_idx[0]+2,
@@ -104,30 +127,41 @@ def interpolate_kernel(field, points, steps, field_out):
                     nearest_idx[1]-1:nearest_idx[1]+2
                 ]
         
-        field_out[n] = calc_grid[0, 0, 0, 0]
-        """
-        grads = []
         for i in range(4):
-            grad_grid = np.moveaxis(calc_grid, i, 0)
-            grads.append((grad_grid[2] - 2*grad_grid[1] + grad_grid[0])/2/steps[i])
+            grad_grid = moveaxis_4(calc_grid, i)
+            for q in range(3):
+                for r in range(3):
+                    for s in range(3):
+                        grads[q,r,s] = ((grad_grid[2][q,r,s] - 2*grad_grid[1][q,r,s] +
+                                             grad_grid[0][q,r,s])/2/steps[i])
             
-        hess = np.zeros((4, 4))
-        for i in range(4):
-            hess_grid = grads[i]
             for j in range(4):
-                hess_grid_T = np.moveaxis(hess_grid, j, 0)[:, 1, 1]
-                hess[i, j] = (hess_grid_T[2] - 2*hess_grid_T[1] + hess_grid_T[0])/2/steps[j]
+                if i == j:
+                    hess[i, j] = grads[(1, 1, 1)]*2/steps[j]
+                else:
+                    if i > j:
+                        hess_grid_T = moveaxis_3(grads, j)
+                    else:
+                        hess_grid_T = moveaxis_3(grads, j-1)
+                    hess[i, j] = (hess_grid_T[2] - 2*hess_grid_T[1] + hess_grid_T[0])/2/steps[j]
         
-        offset = point - nearest_idx @ steps
-        field_out[n] = (field[tuple(nearest_idx)] + np.array(grads) @ offset +
-                         0.5 * offset @ hess @ offset)
-        """
-
+            offset[i] = point[i] - nearest_idx[i] * steps[i]
+            
+        correction = 0
+        for i in range(4):
+            correction += grads[(1,1,1)] * offset[i]
+            order2_temp = 0
+            for j in range(4):
+                order2_temp += hess[i, j] * offset[j]
+            correction += 0.5 * order2_temp * offset[i]
         
+        field_out[n] = calc_grid[(1, 1, 1, 1)] + correction
+  
+      
 def interpolate(field, points, steps):
     field_out_gpu = cuda.device_array(len(points), dtype=np.float64)
-    nblocks = len(points)//16 + 1
-    interpolate_kernel[nblocks, 16](np.ascontiguousarray(field), points, steps, field_out_gpu)
+    nblocks = len(points)//256 + 1
+    interpolate_kernel[nblocks, 256](np.ascontiguousarray(field), points, steps, field_out_gpu)
     field_out = field_out_gpu.copy_to_host()
     return field_out
     
