@@ -4,6 +4,8 @@ from pulse_gpu import pulse_gpu
 import boundaries as bnd
 import matplotlib.pyplot as plt
 import time
+import numba as nb
+from numba import cuda, njit, prange
 from pulse import parameter_container
 from data_manipulation import save_mass_calc as smc
 
@@ -81,4 +83,51 @@ def set_default_inputs():
     default_inputs['n_burst'] = 400
     default_inputs['W'] = 10**5 #erg
     return default_inputs
+
+@cuda.jit
+def interpolate_kernel(field, points, steps, field_out):
+    n = cuda.blockIdx.x
+    k = cuda.threadIdx.x
+    
+    if n < len(points):
+        point = points[n]
+        nearest_idx = cuda.shared.array(4, dtype=nb.int8)
+        
+        
+        (int(point[0]/steps[0]), int(point[1]/steps[1]), int(point[2]/steps[2]),    int(point[3]/steps[3])
+        )
+        
+        calc_grid = field[
+                    nearest_idx[0]-1:nearest_idx[0]+2,
+                    nearest_idx[1]-1:nearest_idx[1]+2,
+                    nearest_idx[1]-1:nearest_idx[1]+2,
+                    nearest_idx[1]-1:nearest_idx[1]+2
+                ]
+        
+        field_out[n] = calc_grid[0, 0, 0, 0]
+        """
+        grads = []
+        for i in range(4):
+            grad_grid = np.moveaxis(calc_grid, i, 0)
+            grads.append((grad_grid[2] - 2*grad_grid[1] + grad_grid[0])/2/steps[i])
+            
+        hess = np.zeros((4, 4))
+        for i in range(4):
+            hess_grid = grads[i]
+            for j in range(4):
+                hess_grid_T = np.moveaxis(hess_grid, j, 0)[:, 1, 1]
+                hess[i, j] = (hess_grid_T[2] - 2*hess_grid_T[1] + hess_grid_T[0])/2/steps[j]
+        
+        offset = point - nearest_idx @ steps
+        field_out[n] = (field[tuple(nearest_idx)] + np.array(grads) @ offset +
+                         0.5 * offset @ hess @ offset)
+        """
+
+        
+def interpolate(field, points, steps):
+    field_out_gpu = cuda.device_array(len(points), dtype=np.float64)
+    nblocks = len(points)//16 + 1
+    interpolate_kernel[nblocks, 16](np.ascontiguousarray(field), points, steps, field_out_gpu)
+    field_out = field_out_gpu.copy_to_host()
+    return field_out
     

@@ -26,7 +26,7 @@ print(intensity.shape)
 
 fps = 0.1
 print(x.shape)
-figures = fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter)
+#figures = fp.plot(intensity, x, 'intensity', fold, t_scale, z_range, delimiter)
 #for (i, fig) in enumerate(figures):
 #    filename = fold + delimiter + 'intensity' + f'_{i}.png'
 #    fig.savefig(filename)
