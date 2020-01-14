@@ -105,6 +105,13 @@ def moveaxis_3(mtx, axis):
     else:
         return (mtx[1,1,0], mtx[1,1,1], mtx[1,1,2])
 
+@cuda.jit(device=True) 
+def _round(x):
+    if (x - int(x)) > 0.5:
+        return int(x) + 1
+    else:
+        return int(x)
+
 
 @cuda.jit
 def interpolate_kernel(field, points, steps, field_out):
@@ -118,7 +125,7 @@ def interpolate_kernel(field, points, steps, field_out):
         offset = cuda.local.array(4, dtype=nb.float64)
         
         for i in range(4):
-            nearest_idx[i] = int(point[i]/steps[i])
+            nearest_idx[i] = _round(point[i]/steps[i])
         
         calc_grid = field[
                     nearest_idx[0]-1:nearest_idx[0]+2,
