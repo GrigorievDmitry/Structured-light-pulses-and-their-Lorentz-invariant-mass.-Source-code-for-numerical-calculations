@@ -171,4 +171,8 @@ def interpolate(field, points, steps):
     interpolate_kernel[nblocks, 256](np.ascontiguousarray(field), points, steps, field_out_gpu)
     field_out = field_out_gpu.copy_to_host()
     return field_out
-    
+
+
+def translate_coordinates(ct_mesh, z_mesh, beta):
+    gamma = 1/np.sqrt(1 - beta**2)
+    return gamma*ct_mesh - beta*gamma*z_mesh, gamma*z_mesh - beta*gamma*ct_mesh
