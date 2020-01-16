@@ -8,6 +8,7 @@ import numba as nb
 from numba import cuda, njit, prange
 from pulse import parameter_container
 from data_manipulation import save_mass_calc as smc
+from functools import reduce
 
 def field_core(pars, presets):
     loc_pulse = pulse(bnd.field, pars.x, pars.y, presets['r_type'], *(presets['f_type'], pars.w0, presets['scalar']))
@@ -176,3 +177,22 @@ def interpolate(field, points, steps):
 def translate_coordinates(ct_mesh, z_mesh, beta):
     gamma = 1/np.sqrt(1 - beta**2)
     return gamma*ct_mesh - beta*gamma*z_mesh, gamma*z_mesh - beta*gamma*ct_mesh
+
+
+def change_ref_frame(field, ranges, beta):
+    """Axis order: t, z, x, y"""
+    steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
+    t_mesh, z_mesh = np.meshgrid(ranges[0], ranges[1])
+    t_mesh, z_mesh = translate_coordinates(pulse.c * t_mesh, z_mesh, beta)
+    t_mesh = t_mesh/pulse.c
+    points_zt = np.vstack((t_mesh.ravel(), z_mesh.ravel())).T
+    x_mesh, y_mesh = np.meshgrid(ranges[2], ranges[3])
+    points_xy = np.vstack((x_mesh.ravel(), y_mesh.ravel())).T
+    points = []
+    for i in range(points_xy.shape[0]):
+        points.append(np.hstack((points_zt, np.ones(points_zt.shape)*
+                                 np.expand_dims(points_xy[i, :], 0))))
+    points = np.array(points).reshape(-1, 4)
+    field_out = interpolate(field, points, steps)
+    return field_out, (t_mesh, z_mesh)
+        
