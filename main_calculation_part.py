@@ -149,8 +149,8 @@ def interpolate_kernel(field, points, steps, zero, field_out):
       
 def interpolate(field, points, steps, zero):
     print("Interpolating {} points".format(len(points)))
-    min_max = np.zeros(2, 4)
-    for i in range(2):
+    min_max = np.zeros((2, 4), dtype=np.int32)
+    for i in range(4):
         min_max[:, i] = np.round((np.array([points[:, i].min(),
                                           points[:, i].max()]) - zero[i])/steps[i])
     
@@ -162,8 +162,12 @@ def interpolate(field, points, steps, zero):
                     min_max[0, 3]:min_max[1, 3]+1,
                 ]
     except IndexError:
+        print(min_max)
         raise InterpolationError("Some points are out of range.")
     
+    print(zero)
+    zero = np.array([zero[i] + steps[i] * min_max[0, i] for i in range(4)])
+    print(zero)
     field_out_gpu = cuda.device_array(len(points), dtype=np.float32)
     nblocks = len(points)//256 + 1
     interpolate_kernel[nblocks, 256](np.ascontiguousarray(base), points, steps, zero, field_out_gpu)
@@ -179,8 +183,35 @@ def translate_coordinates(ct, z, beta):
     gamma = 1/np.sqrt(1 - beta**2)
     return gamma*ct + beta*gamma*z, gamma*z + beta*gamma*ct
 
+@njit(parallel=True)
+def transform_field(fields, beta):
+    n = len(fields[0])
+    fields_transformed = np.zeros((n, 6))
+    gamma = 1/np.sqrt(1 - beta**2)
+    jacobian = np.array(
+                    [[gamma, -beta * gamma, 0, 0],
+                     [-beta * gamma, gamma, 0, 0],
+                     [0, 0, 1, 0],
+                     [0, 0, 0, 1]]
+                )
+    for i in prange(n):
+        f_tensor = np.array(
+                    [[0, fields[0], fields[1], fields[2]],
+                     [-fields[0], 0, -fields[5], fields[4]],
+                     [-fields[1], fields[5], 0, -fields[3]],
+                     [-fields[2], -fields[4], fields[3], 0]]
+                )
+        f_tensor = jacobian @ f_tensor @ jacobian
+        fields_transformed[i, :] = [
+                    f_tensor[0, 1], f_tensor[0, 2],
+                    f_tensor[0, 3], f_tensor[3, 2],
+                    f_tensor[1, 3], f_tensor[2, 1],
+                ]
+    
+    return fields_transformed
 
-def change_ref_frame(field, points, beta, ranges):
+
+def change_ref_frame(fields, points, beta, ranges):
     """Axis order: t, z, x, y"""
     steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
     zero = np.array([ranges[i][0] for i in range(4)])
@@ -189,19 +220,21 @@ def change_ref_frame(field, points, beta, ranges):
         ct, z = translate_coordinates(point[0], point[1], beta)
         points_lab_frame.append(np.array([ct, z, point[2], point[3]]))
     points_lab_frame = np.array(points_lab_frame)
-    field_out = interpolate(field, points_lab_frame, steps, zero)
-    return field_out, points
+    fields_out = []
+    for field in fields:
+        fields_out.append(interpolate(field, points_lab_frame, steps, zero))
+    fields_out = transform_field(fields_out, beta)
+    return fields_out, points
 
 
 def test_interpolation(field, ranges):
     steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
     zero = np.array([ranges[i][0] for i in range(4)])
-    t_mesh, z_mesh = np.meshgrid(ranges[0] + 0.1, ranges[1] + 0.1)
-    points_zt = np.vstack((t_mesh.ravel(), z_mesh.ravel())).T
+    z_mesh, x_mesh = np.meshgrid(ranges[1][1:-1] + 0.1, ranges[2])
+    points_zx = np.vstack((z_mesh.ravel(), x_mesh.ravel())).T
     points = []
-    for i in range(ranges[2].shape[0]):
-        points.append(np.hstack((points_zt, np.ones(points_zt.shape)*
-                                 np.expand_dims(np.array([ranges[2][i], ranges[3][50]]), 0))))
+    for p in points_zx:
+        points.append(np.array([ranges[0][1] + 0.1, p[0], p[1], ranges[3][50]]))
     points = np.array(points).reshape(-1, 4)
     field_out = interpolate(field, points, steps, zero)
     return field_out, points
@@ -215,8 +248,7 @@ def plotter(field_out, points, pars, intensity):
     gridz = []
     gridx = []
     for i, point in enumerate(points):
-        if (point[0] == pars.t[1] + 0.1 and point[1] > pars.z[0] + 0.1
-            and point[1] < pars.z[15]):
+        if point[1] < pars.z[15]:
             field_xz.append(field_out[i])
             gridz.append(point[1])
             gridx.append(point[2])
