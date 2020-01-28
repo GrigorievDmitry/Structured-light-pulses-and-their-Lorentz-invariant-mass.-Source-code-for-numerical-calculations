@@ -103,24 +103,24 @@ def _round(x):
 
 
 @cuda.jit
-def interpolate_kernel(field, points, steps, field_out):
+def interpolate_kernel(field, points, steps, zero, field_out):
     n = cuda.grid(1)
     
     if n < len(points):
         point = points[n]
         nearest_idx = cuda.local.array(2, dtype=nb.int8)
-        grads = cuda.local.array(3, dtype=nb.float64)
-        hess = cuda.local.array((2, 2), dtype=nb.float64)
-        offset = cuda.local.array(2, dtype=nb.float64)
+        grads = cuda.local.array(3, dtype=nb.float32)
+        hess = cuda.local.array((2, 2), dtype=nb.float32)
+        offset = cuda.local.array(2, dtype=nb.float32)
         
         for i in range(2):
-            nearest_idx[i] = _round(point[i]/steps[i])
+            nearest_idx[i] = _round((point[i] - zero[i])/steps[i])
         
         calc_grid = field[
                     nearest_idx[0]-1:nearest_idx[0]+2,
                     nearest_idx[1]-1:nearest_idx[1]+2,
-                    _round(point[2]/steps[2]),
-                    _round(point[3]/steps[3])
+                    _round((point[2] - zero[2])/steps[2]),
+                    _round((point[3] - zero[3])/steps[3]),
                 ]
         
         correction = 0
@@ -147,34 +147,90 @@ def interpolate_kernel(field, points, steps, field_out):
         field_out[n] = calc_grid[(1, 1)] + correction
   
       
-def interpolate(field, points, steps):
+def interpolate(field, points, steps, zero):
     print("Interpolating {} points".format(len(points)))
-    field_out_gpu = cuda.device_array(len(points), dtype=np.float64)
+    min_max = np.zeros(2, 4)
+    for i in range(2):
+        min_max[:, i] = np.round((np.array([points[:, i].min(),
+                                          points[:, i].max()]) - zero[i])/steps[i])
+    
+    try:
+        base = field[
+                    min_max[0, 0]-1:min_max[1, 0]+2,
+                    min_max[0, 1]-1:min_max[1, 1]+2,
+                    min_max[0, 2]:min_max[1, 2]+1,
+                    min_max[0, 3]:min_max[1, 3]+1,
+                ]
+    except IndexError:
+        raise InterpolationError("Some points are out of range.")
+    
+    field_out_gpu = cuda.device_array(len(points), dtype=np.float32)
     nblocks = len(points)//256 + 1
-    interpolate_kernel[nblocks, 256](np.ascontiguousarray(field), points, steps, field_out_gpu)
+    interpolate_kernel[nblocks, 256](np.ascontiguousarray(base), points, steps, zero, field_out_gpu)
     field_out = field_out_gpu.copy_to_host()
     return field_out
 
 
-def translate_coordinates(ct_mesh, z_mesh, beta):
+class InterpolationError(Exception):
+    pass
+
+
+def translate_coordinates(ct, z, beta):
     gamma = 1/np.sqrt(1 - beta**2)
-    return gamma*ct_mesh - beta*gamma*z_mesh, gamma*z_mesh - beta*gamma*ct_mesh
+    return gamma*ct + beta*gamma*z, gamma*z + beta*gamma*ct
 
 
-def change_ref_frame(field, ranges, beta):
+def change_ref_frame(field, points, beta, ranges):
     """Axis order: t, z, x, y"""
     steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
-    t_mesh, z_mesh = np.meshgrid(ranges[0], ranges[1])
-    t_mesh, z_mesh = translate_coordinates(pulse.c * t_mesh, z_mesh, beta)
-    t_mesh = t_mesh/pulse.c
+    zero = np.array([ranges[i][0] for i in range(4)])
+    points_lab_frame = []
+    for point in points:
+        ct, z = translate_coordinates(point[0], point[1], beta)
+        points_lab_frame.append(np.array([ct, z, point[2], point[3]]))
+    points_lab_frame = np.array(points_lab_frame)
+    field_out = interpolate(field, points_lab_frame, steps, zero)
+    return field_out, points
+
+
+def test_interpolation(field, ranges):
+    steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
+    zero = np.array([ranges[i][0] for i in range(4)])
+    t_mesh, z_mesh = np.meshgrid(ranges[0] + 0.1, ranges[1] + 0.1)
     points_zt = np.vstack((t_mesh.ravel(), z_mesh.ravel())).T
-    x_mesh, y_mesh = np.meshgrid(ranges[2], ranges[3])
-    points_xy = np.vstack((x_mesh.ravel(), y_mesh.ravel())).T
     points = []
-    for i in range(points_xy.shape[0]):
+    for i in range(ranges[2].shape[0]):
         points.append(np.hstack((points_zt, np.ones(points_zt.shape)*
-                                 np.expand_dims(points_xy[i, :], 0))))
+                                 np.expand_dims(np.array([ranges[2][i], ranges[3][50]]), 0))))
     points = np.array(points).reshape(-1, 4)
-    field_out = interpolate(field, points, steps)
-    return field_out, (t_mesh, z_mesh)
+    field_out = interpolate(field, points, steps, zero)
+    return field_out, points
+
+
+def plotter(field_out, points, pars, intensity):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    
+    field_xz = []
+    gridz = []
+    gridx = []
+    for i, point in enumerate(points):
+        if (point[0] == pars.t[1] + 0.1 and point[1] > pars.z[0] + 0.1
+            and point[1] < pars.z[15]):
+            field_xz.append(field_out[i])
+            gridz.append(point[1])
+            gridx.append(point[2])
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    z, x = np.meshgrid(pars.z[1:15], pars.x)
+    z, x = z.ravel(), x.ravel()
+    I = intensity[1, 1:15, :, 50].T.ravel()
+    
+    ax.scatter(x, z, I)
+    ax.scatter(gridx, gridz, field_xz)
+    
+            
+    
         
