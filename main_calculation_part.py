@@ -166,6 +166,7 @@ def interpolate(field, points, steps, zero):
         raise InterpolationError("Some points are out of range.")
     
     print(zero)
+    min_max[0, 0:2] = min_max[0, 0:2] - 1
     zero = np.array([zero[i] + steps[i] * min_max[0, i] for i in range(4)])
     print(zero)
     field_out_gpu = cuda.device_array(len(points), dtype=np.float32)
@@ -230,11 +231,11 @@ def change_ref_frame(fields, points, beta, ranges):
 def test_interpolation(field, ranges):
     steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
     zero = np.array([ranges[i][0] for i in range(4)])
-    z_mesh, x_mesh = np.meshgrid(ranges[1][1:-1] + 0.1, ranges[2])
+    z_mesh, x_mesh = np.meshgrid(ranges[1][1:-1] + 8, ranges[2])
     points_zx = np.vstack((z_mesh.ravel(), x_mesh.ravel())).T
     points = []
     for p in points_zx:
-        points.append(np.array([ranges[0][1] + 0.1, p[0], p[1], ranges[3][50]]))
+        points.append(np.array([ranges[0][1], p[0], p[1], ranges[3][50]]))
     points = np.array(points).reshape(-1, 4)
     field_out = interpolate(field, points, steps, zero)
     return field_out, points
