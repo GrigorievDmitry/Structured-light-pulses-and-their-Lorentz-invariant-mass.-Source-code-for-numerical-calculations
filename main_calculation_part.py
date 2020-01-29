@@ -5,7 +5,7 @@ import boundaries as bnd
 import matplotlib.pyplot as plt
 import time
 import numba as nb
-from numba import cuda, njit, prange, jit
+from numba import cuda, njit, prange
 from pulse import parameter_container
 from data_manipulation import save_mass_calc as smc
 from functools import reduce
@@ -165,10 +165,8 @@ def interpolate(field, points, steps, zero):
         print(min_max)
         raise InterpolationError("Some points are out of range.")
     
-    print(zero)
     min_max[0, 0:2] = min_max[0, 0:2] - 1
     zero = np.array([zero[i] + steps[i] * min_max[0, i] for i in range(4)])
-    print(zero)
     field_out_gpu = cuda.device_array(len(points), dtype=np.float32)
     nblocks = len(points)//256 + 1
     interpolate_kernel[nblocks, 256](np.ascontiguousarray(base), points, steps, zero, field_out_gpu)
@@ -184,31 +182,30 @@ def translate_coordinates(ct, z, beta):
     gamma = 1/np.sqrt(1 - beta**2)
     return gamma*ct + beta*gamma*z, gamma*z + beta*gamma*ct
 
-#@jit(parallel=True)
+@njit(parallel=True, nogil=True)
 def transform_field(fields, beta):
-    fields = [field.ravel() for field in fields]
     n = len(fields[0])
     fields_transformed = np.zeros((6, n))
     gamma = 1/np.sqrt(1 - beta**2)
     jacobian = np.array(
-                    [[gamma, -beta * gamma, 0, 0],
-                     [-beta * gamma, gamma, 0, 0],
-                     [0, 0, 1, 0],
-                     [0, 0, 0, 1]]
+                    [[gamma, -beta * gamma, 0., 0.],
+                     [-beta * gamma, gamma, 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., 0., 0., 1.]]
                 )
-    for i in range(n):
+    for i in prange(n):
         f_tensor = np.array(
-                    [[0, fields[0][i], fields[1][i], fields[2][i]],
-                     [-fields[0][i], 0, -fields[5][i], fields[4][i]],
-                     [-fields[1][i], fields[5][i], 0, -fields[3][i]],
-                     [-fields[2][i], -fields[4][i], fields[3][i], 0]]
+                    [[0., fields[0][i], fields[1][i], fields[2][i]],
+                     [-fields[0][i], 0., -fields[5][i], fields[4][i]],
+                     [-fields[1][i], fields[5][i], 0., -fields[3][i]],
+                     [-fields[2][i], -fields[4][i], fields[3][i], 0.]]
                 )
         f_tensor = jacobian @ f_tensor @ jacobian
-        fields_transformed[:, i] = [
+        fields_transformed[:, i] = np.array([
                     f_tensor[0, 1], f_tensor[0, 2],
                     f_tensor[0, 3], f_tensor[3, 2],
                     f_tensor[1, 3], f_tensor[2, 1],
-                ]
+                ])
     
     return fields_transformed
 
