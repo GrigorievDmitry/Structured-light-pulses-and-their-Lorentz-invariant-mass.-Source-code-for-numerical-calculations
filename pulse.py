@@ -14,6 +14,9 @@ class pulse():
         self.r_type = real_type
         self.freq_shift = 0
         self.E_bound = boundary(np.meshgrid(self.x, self.y), *args)
+        
+    def get_field(self):
+        return self.E_real + self.H_real
 
     def spatial_bound_ft(self):
         self.lkx = 2*np.pi*np.linspace(-self.nx/2/(self.x[-1] - self.x[0]), self.nx/2/(self.x[-1] - self.x[0]), self.nx)

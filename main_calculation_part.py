@@ -5,7 +5,7 @@ import boundaries as bnd
 import matplotlib.pyplot as plt
 import time
 import numba as nb
-from numba import cuda, njit, prange
+from numba import cuda, njit, prange, jit
 from pulse import parameter_container
 from data_manipulation import save_mass_calc as smc
 from functools import reduce
@@ -184,10 +184,11 @@ def translate_coordinates(ct, z, beta):
     gamma = 1/np.sqrt(1 - beta**2)
     return gamma*ct + beta*gamma*z, gamma*z + beta*gamma*ct
 
-@njit(parallel=True)
+#@jit(parallel=True)
 def transform_field(fields, beta):
+    fields = [field.ravel() for field in fields]
     n = len(fields[0])
-    fields_transformed = np.zeros((n, 6))
+    fields_transformed = np.zeros((6, n))
     gamma = 1/np.sqrt(1 - beta**2)
     jacobian = np.array(
                     [[gamma, -beta * gamma, 0, 0],
@@ -195,15 +196,15 @@ def transform_field(fields, beta):
                      [0, 0, 1, 0],
                      [0, 0, 0, 1]]
                 )
-    for i in prange(n):
+    for i in range(n):
         f_tensor = np.array(
-                    [[0, fields[0], fields[1], fields[2]],
-                     [-fields[0], 0, -fields[5], fields[4]],
-                     [-fields[1], fields[5], 0, -fields[3]],
-                     [-fields[2], -fields[4], fields[3], 0]]
+                    [[0, fields[0][i], fields[1][i], fields[2][i]],
+                     [-fields[0][i], 0, -fields[5][i], fields[4][i]],
+                     [-fields[1][i], fields[5][i], 0, -fields[3][i]],
+                     [-fields[2][i], -fields[4][i], fields[3][i], 0]]
                 )
         f_tensor = jacobian @ f_tensor @ jacobian
-        fields_transformed[i, :] = [
+        fields_transformed[:, i] = [
                     f_tensor[0, 1], f_tensor[0, 2],
                     f_tensor[0, 3], f_tensor[3, 2],
                     f_tensor[1, 3], f_tensor[2, 1],
