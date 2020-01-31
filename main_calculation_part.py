@@ -182,6 +182,7 @@ def translate_coordinates(ct, z, beta):
     gamma = 1/np.sqrt(1 - beta**2)
     return gamma*ct + beta*gamma*z, gamma*z + beta*gamma*ct
 
+
 @njit(parallel=True, nogil=True)
 def transform_field(fields, beta):
     n = len(fields[0])
@@ -211,18 +212,29 @@ def transform_field(fields, beta):
 
 
 def change_ref_frame(fields, points, beta, ranges):
-    """Axis order: t, z, x, y"""
+    """
+    Performs the field transformation to the moving reference frame.
+    
+    Axis order: t, z, x, y
+    fields - [Ex, Ey, Ez, Hx, Hy, Hz]
+    points - points in moving reference frame
+    beta - v/c
+    ranges - grid in the frame where fields were calculated
+    """
     steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
     zero = np.array([ranges[i][0] for i in range(4)])
     points_lab_frame = []
+    
     for point in points:
         ct, z = translate_coordinates(point[0], point[1], beta)
         points_lab_frame.append(np.array([ct, z, point[2], point[3]]))
     points_lab_frame = np.array(points_lab_frame)
+    
     fields_out = []
     for field in fields:
         fields_out.append(interpolate(field, points_lab_frame, steps, zero))
-    fields_out = transform_field(fields_out, beta)
+    fields_out = transform_field(np.array(fields_out), beta)
+    
     return fields_out, points
 
 
@@ -231,11 +243,13 @@ def test_interpolation(field, ranges):
     zero = np.array([ranges[i][0] for i in range(4)])
     z_mesh, x_mesh = np.meshgrid(ranges[1][1:-1] + 8, ranges[2])
     points_zx = np.vstack((z_mesh.ravel(), x_mesh.ravel())).T
+    
     points = []
     for p in points_zx:
         points.append(np.array([ranges[0][1], p[0], p[1], ranges[3][50]]))
     points = np.array(points).reshape(-1, 4)
     field_out = interpolate(field, points, steps, zero)
+    
     return field_out, points
 
 

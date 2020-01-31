@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 from pulse import parameter_container
-from data_manipulation import save_result, save_environment
 from main_calculation_part import field_core, make_preset, transform_field
 
 #================================PARAMETERS====================================
