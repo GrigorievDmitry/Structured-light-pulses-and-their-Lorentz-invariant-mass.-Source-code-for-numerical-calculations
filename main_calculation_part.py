@@ -179,12 +179,14 @@ class InterpolationError(Exception):
 
 
 def translate_coordinates(ct, z, beta):
+    print("Translating coordinates")
     gamma = 1/np.sqrt(1 - beta**2)
-    return gamma*ct + beta*gamma*z, gamma*z + beta*gamma*ct
+    return gamma*ct - beta*gamma*z, gamma*z - beta*gamma*ct
 
 
 @njit(parallel=True, nogil=True)
 def transform_field(fields, beta):
+    print("Transforming fields")
     n = len(fields[0])
     fields_transformed = np.zeros((6, n))
     gamma = 1/np.sqrt(1 - beta**2)
@@ -223,12 +225,10 @@ def change_ref_frame(fields, points, beta, ranges):
     """
     steps = np.array([ranges[i][1] - ranges[i][0] for i in range(4)])
     zero = np.array([ranges[i][0] for i in range(4)])
-    points_lab_frame = []
     
-    for point in points:
-        ct, z = translate_coordinates(point[0], point[1], beta)
-        points_lab_frame.append(np.array([ct, z, point[2], point[3]]))
-    points_lab_frame = np.array(points_lab_frame)
+    ct, z = translate_coordinates(pulse.c*points[:, 0:1], points[:, 1:2], -beta)
+    points_lab_frame = np.hstack((ct/pulse.c, z, np.array([points[:, 2],
+                                                           points[:, 3]]).T))
     
     fields_out = []
     for field in fields:
