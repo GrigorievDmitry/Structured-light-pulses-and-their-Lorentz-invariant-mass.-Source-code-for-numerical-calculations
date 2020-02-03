@@ -122,6 +122,7 @@ def interpolate_kernel(field, points, steps, zero, field_out):
                     nearest_idx[0]-1:nearest_idx[0]+2,
                     nearest_idx[1]-1:nearest_idx[1]+2,
                     _round((point[2] - zero[2])/steps[2]),
+                    _round((point[3] - zero[3])/steps[3])
                 ]
         
         correction = 0
@@ -164,19 +165,11 @@ def crate_batch(field, points, steps, zero, axis=3):
 
 def interpolate(field, points, steps, zero):
     print("Interpolating {} points".format(len(points)))
-    field_out = np.empty(len(points), dtype=np.float32)
-    axis = 3
-    ids, zeros, slices = crate_batch(field, points, steps, zero, axis=axis)
-    field = np.moveaxis(field, axis, 0)
-    with cuda.gpus[0]:
-        for i in range(len(ids)):
-            zero[axis] = zeros[i]
-            field_out_gpu = cuda.device_array(len(ids[i]), dtype=np.float32)
-            nblocks = len(ids[i])//512 + 1
-            interpolate_kernel[nblocks, 512](np.ascontiguousarray(np.moveaxis(field, axis, 0)[slices[i]]),
-                                              np.ascontiguousarray(points[ids[i]]),
-                                              steps, zero, field_out_gpu)
-            field_out[ids[i]] = field_out_gpu.copy_to_host()
+    field_out_gpu = cuda.device_array(len(points), dtype=np.float32)
+    nblocks = len(points)//512 + 1
+    interpolate_kernel[nblocks, 512](np.ascontiguousarray(field), points, steps, zero, field_out_gpu)
+    field_out = field_out_gpu.copy_to_host()
+    return field_out
     
     return field_out
 
@@ -271,7 +264,7 @@ def transform_field(fields, beta):
     return fields_transformed
 
 
-def change_ref_frame(fields, points, beta, ranges):
+def change_ref_frame(fields, points, beta, ranges, target="gpu"):
     """
     Performs the field transformation to the moving reference frame.
     
@@ -287,11 +280,13 @@ def change_ref_frame(fields, points, beta, ranges):
     ct, z = translate_coordinates(pulse.c*points[:, 0:1], points[:, 1:2], -beta)
     points_lab_frame = np.hstack((ct/pulse.c, z, np.array([points[:, 2],
                                                            points[:, 3]]).T))
-    
+    if target == "gpu":
+        interpolator = interpolate
+    else:
+        interpolator = interpolate_cpu
     fields_out = []
     for field in fields:
-        # fields_out.append(interpolate(field, points_lab_frame, steps, zero))
-        fields_out.append(interpolate_cpu(field, points_lab_frame, steps, zero))
+        fields_out.append(interpolator(field, points_lab_frame, steps, zero))
     fields_out = transform_field(np.array(fields_out), beta)
     
     return fields_out, points

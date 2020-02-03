@@ -42,7 +42,7 @@ def generate_grid(pars, beta, sample_size=None):
     return points
 
 points = generate_grid(pars, beta)
-fields_out, points = change_ref_frame(fields, points, beta, ranges)
+fields_out, points = change_ref_frame(fields, points, beta, ranges, target="gpu")
 
 fields_out = [fields_out[i].reshape(100, 100, 100) for i in range(6)]
 
