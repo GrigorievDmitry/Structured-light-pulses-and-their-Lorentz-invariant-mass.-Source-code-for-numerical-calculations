@@ -39,7 +39,7 @@ def generate_grid(pars, beta, sample_size=None):
     
     return points
 
-points = generate_grid(pars, beta, sample_size=10**7)
+points = generate_grid(pars, beta, sample_size=10**5)
 fields_out, points = change_ref_frame(fields, points, beta, ranges)
 
 

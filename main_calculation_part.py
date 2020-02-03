@@ -9,6 +9,8 @@ from numba import cuda, njit, prange
 from pulse import parameter_container
 from data_manipulation import save_mass_calc as smc
 from functools import reduce
+from tqdm import tqdm
+import pandas as pd
 
 def field_core(pars, presets):
     loc_pulse = pulse(bnd.field, pars.x, pars.y, presets['r_type'], *(presets['f_type'], pars.w0, presets['scalar']))
@@ -120,7 +122,6 @@ def interpolate_kernel(field, points, steps, zero, field_out):
                     nearest_idx[0]-1:nearest_idx[0]+2,
                     nearest_idx[1]-1:nearest_idx[1]+2,
                     _round((point[2] - zero[2])/steps[2]),
-                    _round((point[3] - zero[3])/steps[3]),
                 ]
         
         correction = 0
@@ -145,33 +146,89 @@ def interpolate_kernel(field, points, steps, zero, field_out):
             correction += 0.5 * order2_temp * offset[i]
         
         field_out[n] = calc_grid[(1, 1)] + correction
-  
-      
+
+
+def crate_batch(field, points, steps, zero, axis=3):
+    ids = []
+    slices = []
+    points = pd.DataFrame(points, columns=[0, 1, 2, 3])
+    zeros = points[axis].unique()
+    groups = points.groupby(axis).groups
+    for coord in zeros:
+        ids.append(groups[coord])
+        slices.append(int((coord - zero[axis])/steps[axis]))
+    
+    return ids, zeros, slices
+    
+
+
 def interpolate(field, points, steps, zero):
     print("Interpolating {} points".format(len(points)))
-    min_max = np.zeros((2, 4), dtype=np.int32)
-    for i in range(4):
-        min_max[:, i] = np.round((np.array([points[:, i].min(),
-                                          points[:, i].max()]) - zero[i])/steps[i])
+    field_out = np.empty(len(points), dtype=np.float32)
+    axis = 3
+    ids, zeros, slices = crate_batch(field, points, steps, zero, axis=axis)
+    field = np.moveaxis(field, axis, 0)
+    with cuda.gpus[0]:
+        for i in range(len(ids)):
+            zero[axis] = zeros[i]
+            # field_out_gpu = cuda.device_array(len(ids[i]), dtype=np.float32)
+            # nblocks = len(ids[i])//512 + 1
+            # interpolate_kernel[nblocks, 512](np.ascontiguousarray(np.moveaxis(field, axis, 0)[slices[i]]),
+            #                                  np.ascontiguousarray(points[ids[i]]),
+            #                                  steps, zero, field_out_gpu)
+            # field_out[ids[i]] = field_out_gpu.copy_to_host()
+            field_out[ids[i]] = interpolate_kernel_cpu(field[slices[i]],
+                                              points[ids[i]], steps, zero)
     
-    try:
-        base = field[
-                    min_max[0, 0]-1:min_max[1, 0]+2,
-                    min_max[0, 1]-1:min_max[1, 1]+2,
-                    min_max[0, 2]:min_max[1, 2]+1,
-                    min_max[0, 3]:min_max[1, 3]+1,
-                ]
-    except IndexError:
-        print(min_max)
-        raise InterpolationError("Some points are out of range.")
-    
-    min_max[0, 0:2] = min_max[0, 0:2] - 1
-    zero = np.array([zero[i] + steps[i] * min_max[0, i] for i in range(4)])
-    field_out_gpu = cuda.device_array(len(points), dtype=np.float32)
-    nblocks = len(points)//256 + 1
-    interpolate_kernel[nblocks, 256](np.ascontiguousarray(base), points, steps, zero, field_out_gpu)
-    field_out = field_out_gpu.copy_to_host()
     return field_out
+
+
+@njit(parallel=True, nogil=True)
+def interpolate_kernel_cpu(field, points, steps, zero):
+    field_out = np.empty(len(points), dtype=np.float32)
+    for n in prange(len(points)):
+        point = points[n]
+        nearest_idx = np.empty(2, dtype=np.int8)
+        grads = np.empty(3, dtype=np.float32)
+        hess = np.empty((2, 2), dtype=np.float32)
+        offset = np.empty(2, dtype=np.float32)
+        
+        for i in range(2):
+            nearest_idx[i] = round((point[i] - zero[i])/steps[i])
+        
+        calc_grid = field[
+                    nearest_idx[0]-1:nearest_idx[0]+2,
+                    nearest_idx[1]-1:nearest_idx[1]+2,
+                    round((point[2] - zero[2])/steps[2]),
+                ]
+        
+        correction = 0
+        for i in range(2):
+            if i == 0:
+                grad_grid = (calc_grid[0,:], calc_grid[1,:], calc_grid[2,:])
+            else:
+                grad_grid = (calc_grid[:,0], calc_grid[:,1], calc_grid[:,2])
+            
+            for q in range(3):
+                grads[q] = ((grad_grid[2][q] - 2*grad_grid[1][q] +
+                                     grad_grid[0][q])/2/steps[i])
+            
+            for j in range(2):
+                if i == j:
+                    hess[i, j] = grads[1]*2/steps[j]
+                else:
+                    hess[i, j] = (grads[2] - 2*grads[1] + grads[0])/2/steps[j]
+        
+            offset[i] = point[i] - nearest_idx[i] * steps[i]
+            
+            correction += grads[1] * offset[i]
+            order2_temp = 0
+            for j in range(2):
+                order2_temp += hess[i, j] * offset[j]
+            correction += 0.5 * order2_temp * offset[i]
+        
+        field_out[n] = calc_grid[(1, 1)] + correction
+    
 
 
 class InterpolationError(Exception):
