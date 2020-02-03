@@ -1,6 +1,6 @@
 import numpy as np
 from pulse import pulse
-from pulse_gpu import pulse_gpu
+# from pulse_gpu import pulse_gpu
 import boundaries as bnd
 import matplotlib.pyplot as plt
 import time
@@ -171,20 +171,18 @@ def interpolate(field, points, steps, zero):
     with cuda.gpus[0]:
         for i in range(len(ids)):
             zero[axis] = zeros[i]
-            # field_out_gpu = cuda.device_array(len(ids[i]), dtype=np.float32)
-            # nblocks = len(ids[i])//512 + 1
-            # interpolate_kernel[nblocks, 512](np.ascontiguousarray(np.moveaxis(field, axis, 0)[slices[i]]),
-            #                                  np.ascontiguousarray(points[ids[i]]),
-            #                                  steps, zero, field_out_gpu)
-            # field_out[ids[i]] = field_out_gpu.copy_to_host()
-            field_out[ids[i]] = interpolate_kernel_cpu(field[slices[i]],
-                                              points[ids[i]], steps, zero)
+            field_out_gpu = cuda.device_array(len(ids[i]), dtype=np.float32)
+            nblocks = len(ids[i])//512 + 1
+            interpolate_kernel[nblocks, 512](np.ascontiguousarray(np.moveaxis(field, axis, 0)[slices[i]]),
+                                              np.ascontiguousarray(points[ids[i]]),
+                                              steps, zero, field_out_gpu)
+            field_out[ids[i]] = field_out_gpu.copy_to_host()
     
     return field_out
 
-
 @njit(parallel=True, nogil=True)
-def interpolate_kernel_cpu(field, points, steps, zero):
+def interpolate_cpu(field, points, steps, zero):
+    print("Interpolating")
     field_out = np.empty(len(points), dtype=np.float32)
     for n in prange(len(points)):
         point = points[n]
@@ -194,12 +192,13 @@ def interpolate_kernel_cpu(field, points, steps, zero):
         offset = np.empty(2, dtype=np.float32)
         
         for i in range(2):
-            nearest_idx[i] = round((point[i] - zero[i])/steps[i])
+            nearest_idx[i] = int(round((point[i] - zero[i])/steps[i]))
         
         calc_grid = field[
                     nearest_idx[0]-1:nearest_idx[0]+2,
                     nearest_idx[1]-1:nearest_idx[1]+2,
-                    round((point[2] - zero[2])/steps[2]),
+                    int(round((point[2] - zero[2])/steps[2])),
+                    int(round((point[3] - zero[3])/steps[3]))
                 ]
         
         correction = 0
@@ -229,6 +228,8 @@ def interpolate_kernel_cpu(field, points, steps, zero):
         
         field_out[n] = calc_grid[(1, 1)] + correction
     
+    print("Finished interpolation")
+    return field_out
 
 
 class InterpolationError(Exception):
@@ -289,7 +290,8 @@ def change_ref_frame(fields, points, beta, ranges):
     
     fields_out = []
     for field in fields:
-        fields_out.append(interpolate(field, points_lab_frame, steps, zero))
+        # fields_out.append(interpolate(field, points_lab_frame, steps, zero))
+        fields_out.append(interpolate_cpu(field, points_lab_frame, steps, zero))
     fields_out = transform_field(np.array(fields_out), beta)
     
     return fields_out, points
