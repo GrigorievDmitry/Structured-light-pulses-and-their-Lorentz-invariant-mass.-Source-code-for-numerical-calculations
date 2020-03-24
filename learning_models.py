@@ -91,7 +91,7 @@ if __name__ == "__main__":
         n = 10  # figure with 10 x 2 digits
         digit_size = 28
         figure = np.zeros((digit_size * n, digit_size * 2))
-        decoded = sess.run(x_decoded_mean, feed_dict={x: data[:batch_size, :]})
+        decoded = vae.predict(data[:batch_size, :], batch_size=batch_size)
         for i in range(10):
             figure[i * digit_size: (i + 1) * digit_size,
                    :digit_size] = data[i, :].reshape(digit_size, digit_size)
