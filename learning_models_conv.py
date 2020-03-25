@@ -3,21 +3,19 @@ import keras
 import numpy as np
 import matplotlib.pyplot as plt
 
-from tensorflow.keras.layers import Input, Dense, Lambda, InputLayer,Flatten, Reshape
-from tensorflow.keras.layers import Conv2D, Conv2DTranspose
-from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.datasets import mnist
-from tensorflow.keras.utils import to_categorical
+from keras.layers import Input, Dense, Lambda, InputLayer,Flatten, Reshape
+from keras.layers import Conv2D, Conv2DTranspose
+from keras.models import Model, Sequential
+from keras.datasets import mnist
+from keras.utils import to_categorical
 
 
 def binomial_loss(x, x_decoded_mean, t_mean, t_log_var, batch_size):
-    x = tf.reshape(x, (batch_size, -1))
-    x_decoded_mean = tf.reshape(x_decoded_mean, (batch_size, -1))
     KL = (-t_log_var + tf.exp(t_log_var) + t_mean**2 - 1.)/2.
     KL = tf.reduce_sum(KL, axis=-1)
     rec_loss = x * tf.math.log(x_decoded_mean + 10**(-19)) + \
         (1 - x) * tf.math.log(1 - x_decoded_mean + 10**(-19))
-    rec_loss = tf.reduce_sum(rec_loss, axis=-1)
+    rec_loss = tf.reduce_sum(tf.reshape(rec_loss, (batch_size, -1)), axis=-1)
     return tf.reduce_mean(KL - rec_loss)
 
 
@@ -40,9 +38,9 @@ def sampling(args):
 
 def create_decoder(input_dim, conv_shape):
     decoder = Sequential(name='decoder')
-    decoder.add(InputLayer(input_dim))
+    decoder.add(InputLayer((input_dim,)))
     decoder.add(Dense(intermediate_dim, activation='relu'))
-    decoder.add(Dense(tf.math.reduce_prod(conv_shape[1:]), activation='relu'))
+    decoder.add(Dense(np.prod(conv_shape[1:]), activation='relu'))
     decoder.add(Reshape(conv_shape[1:]))
     decoder.add(Conv2DTranspose(32, (3, 3), activation="relu"))
     decoder.add(Conv2DTranspose(1, (3, 3), activation="sigmoid"))
@@ -74,8 +72,8 @@ if __name__ == "__main__":
     x_decoded_mean = decoder(t)
     
     loss = binomial_loss(x, x_decoded_mean, t_mean, t_log_var, batch_size)
-    vae = Model(inputs=x, outputs=x_decoded_mean)
-    vae.compile(optimizer=tf.keras.optimizers.Adam(), loss=lambda x, y: loss)
+    vae = Model(x, x_decoded_mean)
+    vae.compile(optimizer=keras.optimizers.Adam(), loss=lambda x, y: loss)
     
     
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -97,7 +95,7 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(10, 10))
     for fid_idx, (data, title) in enumerate(
                 zip([x_train, x_test], ['Train', 'Validation'])):
-        n = 10  # figure with 10 x 2 digits
+        n = 10
         digit_size = 28
         figure = np.zeros((digit_size * n, digit_size * 2))
         decoded = vae.predict(data[:batch_size, :], batch_size=batch_size)
