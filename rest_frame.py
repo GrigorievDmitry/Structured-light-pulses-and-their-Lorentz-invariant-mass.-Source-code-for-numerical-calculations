@@ -31,7 +31,7 @@ print(beta)
 
 def generate_grid(pars, beta, sample_size=None):
     z = np.linspace(pars.z[0], pars.z[1]/2, 300)
-    t = np.linspace(pars.t[0], pars.t[1]/8, 300)/pulse.c
+    t = np.linspace(pars.t[0], pars.t[1]/2, 300)/pulse.c
     
     # lab_t, lab_z = translate_coordinates(pulse.c*t, z, -beta)
     # lab_t = lab_t/pulse.c
@@ -61,7 +61,7 @@ pic_path = "pic" + os.sep + "rest_frame" + os.sep
 k = 0
 for i in range(0, 300, 5):
     fig = plt.figure()
-    plt.imshow(I[i], interpolation='lanczos', cmap=cm.RdBu, origin='lower')
+    plt.imshow(I[:, i, :], interpolation='lanczos', cmap=cm.RdBu, origin='lower')
     fig.savefig(pic_path + f"{k}.png")
     k += 1
 #%%

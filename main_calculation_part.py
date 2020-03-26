@@ -175,7 +175,7 @@ def interpolate(field, points, steps, zero):
     
     return field_out
 
-@njit(parallel=True, nogil=True)
+# @njit(parallel=True, nogil=True)
 def interpolate_cpu(field, points, steps, zero):
     print("Interpolating")
     field_out = np.empty(len(points), dtype=np.float32)
@@ -188,10 +188,12 @@ def interpolate_cpu(field, points, steps, zero):
         
         for i in range(2):
             nearest_idx[i] = int(round((point[i] - zero[i])/steps[i]))
-            if nearest_idx[i] <= 0:
-                nearest_idx[i] = 1
+            if nearest_idx[i] < 0:
+                nearest_idx[i] = 0
         
-        if nearest_idx[0] < field.shape[0] - 1 and nearest_idx[1] < field.shape[1] - 1:
+        print(nearest_idx, field.shape)
+        if (0 < nearest_idx[0] < field.shape[0] - 2 and
+            0 < nearest_idx[1] < field.shape[1] - 2):
             calc_grid = field[
                         nearest_idx[0]-1:nearest_idx[0]+2,
                         nearest_idx[1]-1:nearest_idx[1]+2,
@@ -200,31 +202,47 @@ def interpolate_cpu(field, points, steps, zero):
                     ]
         else:
             calc_grid = np.zeros((3, 3))
+            if nearest_idx[0] == 0 or nearest_idx[1] == 0:
+                calc_grid = field[
+                    nearest_idx[0]:nearest_idx[0]+2,
+                    nearest_idx[1]:nearest_idx[1]+2,
+                    int(round((point[2] - zero[2])/steps[2])),
+                    int(round((point[3] - zero[3])/steps[3]))
+                ]
         
         correction = 0
         for i in range(2):
-            if i == 0:
-                grad_grid = (calc_grid[0,:], calc_grid[1,:], calc_grid[2,:])
-            else:
-                grad_grid = (calc_grid[:,0], calc_grid[:,1], calc_grid[:,2])
-            
-            for q in range(3):
-                grads[q] = ((grad_grid[2][q] - 2*grad_grid[1][q] +
-                                     grad_grid[0][q])/2/steps[i])
-            
-            for j in range(2):
-                if i == j:
-                    hess[i, j] = grads[1]*2/steps[j]
+            if nearest_idx[0] != 0 and nearest_idx[1] != 0:
+                if i == 0:
+                    grad_grid = (calc_grid[0,:], calc_grid[1,:], calc_grid[2,:])
                 else:
-                    hess[i, j] = (grads[2] - 2*grads[1] + grads[0])/2/steps[j]
-        
-            offset[i] = point[i] - nearest_idx[i] * steps[i]
+                    grad_grid = (calc_grid[:,0], calc_grid[:,1], calc_grid[:,2])
+                
+                for q in range(3):
+                    grads[q] = ((grad_grid[2][q] - 2*grad_grid[1][q] +
+                                         grad_grid[0][q])/2/steps[i])
+                
+                for j in range(2):
+                    if i == j:
+                        hess[i, j] = grads[1]*2/steps[j]
+                    else:
+                        hess[i, j] = (grads[2] - 2*grads[1] + grads[0])/2/steps[j]
             
-            correction += grads[1] * offset[i]
-            order2_temp = 0
-            for j in range(2):
-                order2_temp += hess[i, j] * offset[j]
-            correction += 0.5 * order2_temp * offset[i]
+                offset[i] = point[i] - nearest_idx[i] * steps[i]
+                
+                correction += grads[1] * offset[i]
+                order2_temp = 0
+                for j in range(2):
+                    order2_temp += hess[i, j] * offset[j]
+                correction += 0.5 * order2_temp * offset[i]
+            else:
+                if i == 0:
+                    grad = (calc_grid[1, 0] - calc_grid[0, 0])/steps[i]
+                else:
+                    grad = (calc_grid[0, 1] - calc_grid[0, 0])/steps[i]
+                
+                offset[i] = point[i] - nearest_idx[i] * steps[i]
+                correction += grad * offset[i]
         
         field_out[n] = calc_grid[(1, 1)] + correction
     
