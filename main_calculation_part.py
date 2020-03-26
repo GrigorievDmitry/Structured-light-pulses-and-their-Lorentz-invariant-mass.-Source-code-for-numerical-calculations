@@ -191,12 +191,15 @@ def interpolate_cpu(field, points, steps, zero):
             if nearest_idx[i] <= 0:
                 nearest_idx[i] = 1
         
-        calc_grid = field[
-                    nearest_idx[0]-1:nearest_idx[0]+2,
-                    nearest_idx[1]-1:nearest_idx[1]+2,
-                    int(round((point[2] - zero[2])/steps[2])),
-                    int(round((point[3] - zero[3])/steps[3]))
-                ]
+        if nearest_idx[0] < field.shape[0] - 1 and nearest_idx[1] < field.shape[1] - 1:
+            calc_grid = field[
+                        nearest_idx[0]-1:nearest_idx[0]+2,
+                        nearest_idx[1]-1:nearest_idx[1]+2,
+                        int(round((point[2] - zero[2])/steps[2])),
+                        int(round((point[3] - zero[3])/steps[3]))
+                    ]
+        else:
+            calc_grid = np.zeros((3, 3))
         
         correction = 0
         for i in range(2):

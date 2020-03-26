@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import imageio
 from main_calculation_part import change_ref_frame
 from main_calculation_part import translate_coordinates
 from pulse import pulse, parameter_container
@@ -7,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 folder_suffix = '_new' #Data will be writen in the new foler with given suffix
-delimiter = '\\'
+delimiter = os.sep
 f_type = 'G'
 
 path = os.getcwd() + delimiter + 'data' + delimiter + f_type + folder_suffix + delimiter
@@ -26,11 +27,11 @@ ranges = [pars.t, pars.z, pars.x, pars.y]
 v = float(np.loadtxt(path + 'velosity.txt'))
 beta = 1. - v
 print(beta)
-# beta = 0.9
+# beta = 0.
 
 def generate_grid(pars, beta, sample_size=None):
-    z = np.linspace(pars.z[0], pars.z[1]/2, 100)
-    t = np.linspace(pars.t[0], pars.t[1]/8, 100)/pulse.c
+    z = np.linspace(pars.z[0], pars.z[1]/2, 300)
+    t = np.linspace(pars.t[0], pars.t[1]/8, 300)/pulse.c
     
     # lab_t, lab_z = translate_coordinates(pulse.c*t, z, -beta)
     # lab_t = lab_t/pulse.c
@@ -50,13 +51,28 @@ def generate_grid(pars, beta, sample_size=None):
 # print(lab_z.min(), lab_z.max(), pars.z.min(), pars.z.max())
 
 points = generate_grid(pars, beta)
-fields_out, points = change_ref_frame(fields, points, beta, ranges, target="gpu")
-
-fields_out = [fields_out[i].reshape(100, 100, 100) for i in range(6)]
+fields_out, points = change_ref_frame(fields, points, beta, ranges, target="cpu")
 #%%
-for i in range(0, 100, 5):
-    # Ex_out = fields_out[0][:, i, :]
-    I = sum([fields_out[j][:, i, :]**2 for j in range(3)])
-    plt.figure()
-    plt.imshow(I, interpolation='lanczos', cmap=cm.RdBu, origin='lower')
-
+fields_out = [fields_out[i].reshape(300, 300, 100) for i in range(6)]
+I = sum([fields_out[i]**2 for i in range(3)])
+# I_min, I_max = I[0].min(), I[0].max()
+#%%
+pic_path = "pic" + os.sep + "rest_frame" + os.sep
+k = 0
+for i in range(0, 300, 5):
+    fig = plt.figure()
+    plt.imshow(I[i], interpolation='lanczos', cmap=cm.RdBu, origin='lower')
+    fig.savefig(pic_path + f"{k}.png")
+    k += 1
+#%%
+images = []
+i = 0
+while True:
+    try:
+        if i%1 ==0:
+            filename = pic_path + f"{i}.png"
+            images.append(imageio.imread(filename))
+        i += 1
+    except FileNotFoundError:
+        break
+imageio.mimsave(pic_path + 'rest_frame.gif', images, duration=0.1)
