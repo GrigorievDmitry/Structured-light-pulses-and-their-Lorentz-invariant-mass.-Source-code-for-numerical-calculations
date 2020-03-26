@@ -23,15 +23,18 @@ W = 10**5 #erg
 
 pars = parameter_container(lambda0, n_burst, w0, W, delimiter)
 ranges = [pars.t, pars.z, pars.x, pars.y]
-# v = float(np.loadtxt(path + 'velosity.txt'))
-# beta = 1. - v
-beta = 0.9
+v = float(np.loadtxt(path + 'velosity.txt'))
+beta = 1. - v
+print(beta)
+# beta = 0.9
 
 def generate_grid(pars, beta, sample_size=None):
-    # t_min, z_max = translate_coordinates(pulse.c*pars.t[1], pars.z[-2], beta)
-    # t_max, z_min = translate_coordinates(pulse.c*pars.t[-2], pars.z[1], beta)
-    z = np.linspace(pars.z[1], pars.z[-1], 100)
-    t = np.linspace(pars.t[1], pars.t[-1]/20, 100)/pulse.c
+    z = np.linspace(pars.z[0], pars.z[1]/2, 100)
+    t = np.linspace(pars.t[0], pars.t[1]/8, 100)/pulse.c
+    
+    # lab_t, lab_z = translate_coordinates(pulse.c*t, z, -beta)
+    # lab_t = lab_t/pulse.c
+    
     t, z, x = np.meshgrid(t, z, pars.x)
     points = np.vstack((t.ravel(), z.ravel(), x.ravel(), np.ones(x.ravel().shape) * pars.y[50])).T
     
@@ -39,15 +42,21 @@ def generate_grid(pars, beta, sample_size=None):
         ids = np.random.choice(np.arange(points.shape[0]), size=int(sample_size)).tolist()
         points = points[ids]
     
+    # return lab_t, lab_z
     return points
+
+# lab_t, lab_z = generate_grid(pars, beta)
+# print(lab_t.min(), lab_t.max(), pars.t.min(), pars.t.max())
+# print(lab_z.min(), lab_z.max(), pars.z.min(), pars.z.max())
 
 points = generate_grid(pars, beta)
 fields_out, points = change_ref_frame(fields, points, beta, ranges, target="gpu")
 
 fields_out = [fields_out[i].reshape(100, 100, 100) for i in range(6)]
-
-for i in range(1, 20, 5):
-    Ex_out = fields_out[2][:, i, :]
+#%%
+for i in range(0, 100, 5):
+    # Ex_out = fields_out[0][:, i, :]
+    I = sum([fields_out[j][:, i, :]**2 for j in range(3)])
     plt.figure()
-    plt.imshow(Ex_out, interpolation='lanczos', cmap=cm.RdBu, origin='lower')
+    plt.imshow(I, interpolation='lanczos', cmap=cm.RdBu, origin='lower')
 

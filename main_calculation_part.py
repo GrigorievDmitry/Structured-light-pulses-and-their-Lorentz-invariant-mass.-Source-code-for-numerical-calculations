@@ -117,6 +117,8 @@ def interpolate_kernel(field, points, steps, zero, field_out):
         
         for i in range(2):
             nearest_idx[i] = _round((point[i] - zero[i])/steps[i])
+            if nearest_idx[i] <= 0:
+                nearest_idx[i] = 1
         
         calc_grid = field[
                     nearest_idx[0]-1:nearest_idx[0]+2,
@@ -186,6 +188,8 @@ def interpolate_cpu(field, points, steps, zero):
         
         for i in range(2):
             nearest_idx[i] = int(round((point[i] - zero[i])/steps[i]))
+            if nearest_idx[i] <= 0:
+                nearest_idx[i] = 1
         
         calc_grid = field[
                     nearest_idx[0]-1:nearest_idx[0]+2,
